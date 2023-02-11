@@ -22,13 +22,21 @@ class requestdata extends dbservices {
     return response
   }
   async firebaseToken(body) {
-    let response
+    let response, temp, temp2
+    if (body.firebaseToken) {
+      temp = 'firebaseToken'
+      temp2 = body.firebaseToken
+    }
+    else {
+      temp = 'expoToken'
+      temp2 = body.expoToken
+    }
     await this.readRequestData('UserSockets', { userName: body.user.userName }).then(async value => {
       if (!value.length) {
-        await this.insertOneData('UserSockets', { userName: body.user.userName, firebaseToken: body.firebaseToken })
+        await this.insertOneData('UserSockets', { userName: body.user.userName, [temp]: temp2 })
       }
       else {
-        await this.updateRequestData('UserSockets', { who: { userName: body.user.userName }, update: { $set: { firebaseToken: body.firebaseToken } } })
+        await this.updateRequestData('UserSockets', { who: { userName: body.user.userName }, update: { $set: { [temp]: temp2 } } })
       }
       response = { Result: true, Response: { userName: body.user.userName } }
     })
@@ -606,28 +614,28 @@ class requestdata extends dbservices {
         })
       }
       // if ((temp1 && temp2) || (temp1 && body.background.length) || (temp2 && body.profile.length)) {
-        await this.updateRequestData("Community", { who: { userName: user.userName }, update: { $push: { community: { communityId: body.id, communityType: body.type, communityName: body.name, communityLoc: body.loc, communityInterest: body.interest, description: body.description, backgroundPath: body.background, profilePath: body.profile } } } }).then(value => {
+      await this.updateRequestData("Community", { who: { userName: user.userName }, update: { $push: { community: { communityId: body.id, communityType: body.type, communityName: body.name, communityLoc: body.loc, communityInterest: body.interest, description: body.description, backgroundPath: body.background, profilePath: body.profile } } } }).then(value => {
+        if (value.Result) {
+          return this.insertOneData("Followers", { id: body.id, type: "community" })
+        }
+        else response = { Result: false, Response: responseMessage.statusMessages.noDataInDbErr }
+      })
+        .then(value => {
           if (value.Result) {
-            return this.insertOneData("Followers", { id: body.id, type: "community" })
+            return this.insertOneData("CommunityPost", { communityId: body.id })
           }
-          else response = { Result: false, Response: responseMessage.statusMessages.noDataInDbErr }
+          else
+            response = { Result: false, Response: responseMessage.statusMessages.dbUpdateErr }
+        }).then(value => {
+          if (value.Result) {
+            response = { Result: true, Response: { status: "Success", id: body.id } }
+          }
+          else
+            response = { Result: false, Response: responseMessage.statusMessages.dbUpdateErr }
         })
-          .then(value => {
-            if (value.Result) {
-              return this.insertOneData("CommunityPost", { communityId: body.id })
-            }
-            else
-              response = { Result: false, Response: responseMessage.statusMessages.dbUpdateErr }
-          }).then(value => {
-            if (value.Result) {
-              response = { Result: true, Response: { status: "Success", id: body.id } }
-            }
-            else
-              response = { Result: false, Response: responseMessage.statusMessages.dbUpdateErr }
-          })
-          .catch(error => {
-            response = error
-          })
+        .catch(error => {
+          response = error
+        })
       // }
       // else {
       //   response = { Result: false, Response: responseMessage.statusMessages.dbUpdateErr }
