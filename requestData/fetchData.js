@@ -5,8 +5,9 @@ let jwt = require('jsonwebtoken')
 let s3service = require('../modules/services')
 const validate = require('../requestData/requestValidation')
 const validator = new validate()
+let expo = require('../modules/exposervice')
 // const { io } = require("socket.io-client");
-// const socket = io("http://ec2-35-77-103-137.ap-northeast-1.compute.amazonaws.com:3000");
+// const socket = io("http://127.0.0.1:3000");
 let awsservice = new s3service()
 class requestdata extends dbservices {
   constructor() {
@@ -107,24 +108,6 @@ class requestdata extends dbservices {
     })
     return response
   }
-  // async userhomepage(body) {
-  //   //body.loc is a array containing long and lat
-  //   let response, data = []
-  //   await this.mongo.collection('Users').find({ location: { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } }).toArray().then(async value => {
-  //     // console.log(value)
-  //     for (let i = 0; i < value.length; i++) {
-  //       await this.readRequestData('Posts', { userName: value[i].userName }).then(value1 => {
-  //         if (value1.length && value1[0].posts) {
-  //           data.push({ userName: value[i].userName, name: value[i].name, profilePath: value[i].profilePath, isVerified: value[i].isVerified, post: value1[0].posts[value1[0].posts.length - 1] })
-  //         }
-  //       })
-  //     }
-  //     response = { Result: true, Response: data }
-  //   }).catch(error => {
-  //     response = { Result: false, Response: "error in getresultbasedonlocation api" }
-  //   })
-  //   return response
-  // }
   async getusersresultbasedonlocation(body) {
     //body.loc is a array containing long and lat
     let limit = 5
@@ -773,11 +756,28 @@ class requestdata extends dbservices {
     const user = body.user
     if (user) {
       body.commentId = body.id + '-' + uuidv1().split('-').join('')
-      await this.updateRequestData("Comment", { who: { id: body.id, type: body.type }, update: { $push: { comments: { userName: user.userName, date: Date(), comment: body.comment, commentId: body.commentId } } } }).then(value => {
+      await this.updateRequestData("Comment", { who: { id: body.id, type: body.type }, update: { $push: { comments: { userName: user.userName, date: Date(), comment: body.comment, commentId: body.commentId } } } }).then(async value => {
         if (value.Result == true)
           response = { Result: true, Response: { status: "Success", user: user.userName } }
         // socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, commentedby: user.userName, commentId: body.commentId } })
-        // validator.sendnotification()
+        // await validator.sendnotification('dasf',
+        //   {
+        //     notification: {
+        //       title: 'Title of your push notification',
+        //       body: 'Body of your push notification'
+        //     },
+        //     data: {
+        //       my_key: 'my value',
+        //       my_another_key: 'my another value'
+        //     }
+        //   }
+        // )
+        // await expo({
+        //   to: pushToken,
+        //   sound: 'default',
+        //   body: `${user.userName commented on your post}`,
+        //   data: { postID: body.id },
+        // })
       }).catch(error => {
         response = error
       })
@@ -896,11 +896,28 @@ class requestdata extends dbservices {
           response = { Result: true, Response: { status: "Success", user: user.userName } }
           return this.updateRequestData("Followers", { who: { id: body.id }, update: { $push: { followers: user.userName } } })
         }
-      }).then(value => {
+      }).then(async value => {
         if (value.Result) {
           response = { Result: true, Response: { status: "Success", user: body.user } }
           // socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, followedby: user.userName, id: body.id } })
-          // validator.sendnotification()
+          // await validator.sendnotification('dasf',
+          //   {
+          //     notification: {
+          //       title: 'Title of your push notification',
+          //       body: 'Body of your push notification'
+          //     },
+          //     data: {
+          //       my_key: 'my value',
+          //       my_another_key: 'my another value'
+          //     }
+          //   }
+          // )
+          // await expo({
+          //   to: pushToken,
+          //   sound: 'default',
+          //   body: `${user.userName commented on your post}`,
+          //   data: { postID: body.id },
+          // })
         }
       }).catch(error => {
         err = error
@@ -945,11 +962,28 @@ class requestdata extends dbservices {
             return this.updateRequestData("Likedby", { who: { id: body.id }, update: { $push: { likedby: user.userName } } })
           }
           else response = { Result: false, Response: responseMessage.statusMessages.noDataFoundErr }
-        }).then(value => {
+        }).then(async value => {
           if (value.Result) {
             response = { Result: true, Response: { status: "Success", user: user.userName } }
             // socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, likedby: user.userName, postId: body.id } })
-            // validator.sendnotification()
+            // await validator.sendnotification('dasf',
+            //   {
+            //     notification: {
+            //       title: 'Title of your push notification',
+            //       body: 'Body of your push notification'
+            //     },
+            //     data: {
+            //       my_key: 'my value',
+            //       my_another_key: 'my another value'
+            //     }
+            //   }
+            // )
+            // await expo({
+            //   to: pushToken,
+            //   sound: 'default',
+            //   body: `${user.userName commented on your post}`,
+            //   data: { postID: body.id },
+            // })
           }
           else response = { Result: false, Response: responseMessage.statusMessages.noDataFoundErr }
         }).catch(err => {
