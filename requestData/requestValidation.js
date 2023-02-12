@@ -1,6 +1,7 @@
 let responseMessage = require('../config/ResponseMessage.json')
 let jwt = require('jsonwebtoken')
 let auth = require('../modules/firebaseservice')
+let { fcm } = require('../modules/firebaseservice')
 require('dotenv').config({ path: '../.env' })
 class validate {
     constructor() { }

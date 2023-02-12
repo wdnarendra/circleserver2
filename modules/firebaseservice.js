@@ -8,4 +8,4 @@ admin.initializeApp({
 });
 
 module.exports=admin.auth()
-// module.exports.fcm=admin.messaging()
+module.exports.fcm=admin.messaging()

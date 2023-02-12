@@ -144,7 +144,7 @@ class requestdata extends dbservices {
     return await this.mongo.collection('Community').aggregate([{ $match: { $or: [{ 'community.communityLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } }, { $and: [{ 'community.communityLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } }, { $text: { $search: body.interest } }] }] } }, { $unwind: '$community' }, { $match: { 'community.communityLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } } }, { $skip: (body.page - 1) * limit }, { $limit: limit }]).toArray().then(async value => {
       let temp = []
       value.forEach(value => {
-        temp.push({ communityName: value.community.communityName, profilePath: value.community.profilePath, communityId: value.community.communityId, backgroundPath: value.community.backgroundPath })
+        temp.push({ communityInterest: value.community.communityInterest, communityName: value.community.communityName, profilePath: value.community.profilePath, communityId: value.community.communityId, backgroundPath: value.community.backgroundPath })
       })
       for (let i = 0; i < temp.length; i++) {
         await this.readRequestData('Followers', { id: temp[i].communityId }).then(async value => {
