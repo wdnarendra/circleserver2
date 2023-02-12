@@ -1,6 +1,6 @@
 node_modules
-.env
 test.js
 response.json
+.env
 request.js
 clientrequest.json

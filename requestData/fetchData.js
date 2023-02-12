@@ -3,6 +3,8 @@ const responseMessage = require("../config/ResponseMessage.json");
 let dbservices = require('../modules/databaseServices')
 let jwt = require('jsonwebtoken')
 let s3service = require('../modules/services')
+const validate = require('../requestData/requestValidation')
+const validator = new validate()
 // const { io } = require("socket.io-client");
 // const socket = io("http://ec2-35-77-103-137.ap-northeast-1.compute.amazonaws.com:3000");
 let awsservice = new s3service()
@@ -138,7 +140,7 @@ class requestdata extends dbservices {
   async getcommunityresultbasedonlocation(body) {
     //body.loc is a array containing long and lat
     let limit = 5
-    return await this.mongo.collection('Community').aggregate([{ $match: { 'community.communityLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } } }, { $unwind: '$community' }, { $match: { 'community.communityLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } } }, { $skip: (body.page - 1) * limit }, { $limit: limit }]).toArray().then(async value => {
+    return await this.mongo.collection('Community').aggregate([{ $match: { $or: [{ 'community.communityLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } }, { $and: [{ 'community.communityLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } }, { $text: { $search: body.interest } }] }] } }, { $unwind: '$community' }, { $match: { 'community.communityLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } } }, { $skip: (body.page - 1) * limit }, { $limit: limit }]).toArray().then(async value => {
       let temp = []
       value.forEach(value => {
         temp.push({ communityName: value.community.communityName, profilePath: value.community.profilePath, communityId: value.community.communityId, backgroundPath: value.community.backgroundPath })
@@ -774,6 +776,7 @@ class requestdata extends dbservices {
         if (value.Result == true)
           response = { Result: true, Response: { status: "Success", user: user.userName } }
         // socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, commentedby: user.userName, commentId: body.commentId } })
+        // validator.sendnotification()
       }).catch(error => {
         response = error
       })
@@ -896,6 +899,7 @@ class requestdata extends dbservices {
         if (value.Result) {
           response = { Result: true, Response: { status: "Success", user: body.user } }
           // socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, followedby: user.userName, id: body.id } })
+          // validator.sendnotification()
         }
       }).catch(error => {
         err = error
@@ -944,6 +948,7 @@ class requestdata extends dbservices {
           if (value.Result) {
             response = { Result: true, Response: { status: "Success", user: user.userName } }
             // socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, likedby: user.userName, postId: body.id } })
+            // validator.sendnotification()
           }
           else response = { Result: false, Response: responseMessage.statusMessages.noDataFoundErr }
         }).catch(err => {
