@@ -139,6 +139,7 @@ class requestdata extends dbservices {
   }
   async getcommunityresultbasedonlocation(body) {
     //body.loc is a array containing long and lat
+    if (!body.interest) body.interest = ''
     let limit = 5
     return await this.mongo.collection('Community').aggregate([{ $match: { $or: [{ 'community.communityLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } }, { $and: [{ 'community.communityLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } }, { $text: { $search: body.interest } }] }] } }, { $unwind: '$community' }, { $match: { 'community.communityLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } } }, { $skip: (body.page - 1) * limit }, { $limit: limit }]).toArray().then(async value => {
       let temp = []
@@ -162,7 +163,7 @@ class requestdata extends dbservices {
       }
       return { Result: true, Response: temp }
     }).catch(error => {
-      // console.log(error)
+      console.log(error)
       return { Result: false, Response: "error in getresultbasedonlocation api" }
     })
   }
