@@ -759,7 +759,7 @@ class requestdata extends dbservices {
       await this.updateRequestData("Comment", { who: { id: body.id, type: body.type }, update: { $push: { comments: { userName: user.userName, date: Date(), comment: body.comment, commentId: body.commentId } } } }).then(async value => {
         if (value.Result == true)
           response = { Result: true, Response: { status: "Success", user: user.userName } }
-        // socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, commentedby: user.userName, commentId: body.commentId, postId: body.id } })
+        // socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, commentedby: user.userName, commentId: body.commentId, postId: body.id, type:"comment"} })
         // await validator.sendnotification('dasf',
         //   {
         //     notification: {
@@ -899,7 +899,7 @@ class requestdata extends dbservices {
       }).then(async value => {
         if (value.Result) {
           response = { Result: true, Response: { status: "Success", user: body.user } }
-          // socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, followedby: user.userName, id: body.id } })
+          // socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, followedby: user.userName, id: body.id , type:"follow"} })
           // await validator.sendnotification('dasf',
           //   {
           //     notification: {
@@ -965,7 +965,7 @@ class requestdata extends dbservices {
         }).then(async value => {
           if (value.Result) {
             response = { Result: true, Response: { status: "Success", user: user.userName } }
-            // socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, likedby: user.userName, postId: body.id } })
+            // socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, likedby: user.userName, postId: body.id, type:"like" } })
             // await validator.sendnotification('dasf',
             //   {
             //     notification: {
