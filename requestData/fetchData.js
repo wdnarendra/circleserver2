@@ -6,8 +6,8 @@ let s3service = require('../modules/services')
 const validate = require('../requestData/requestValidation')
 const validator = new validate()
 let expo = require('../modules/exposervice')
-// const { io } = require("socket.io-client");
-// const socket = io("http://127.0.0.1:3000");
+const { io } = require("socket.io-client");
+const socket = io("http://127.0.0.1:3000");
 let awsservice = new s3service()
 class requestdata extends dbservices {
   constructor() {
@@ -759,7 +759,7 @@ class requestdata extends dbservices {
       await this.updateRequestData("Comment", { who: { id: body.id, type: body.type }, update: { $push: { comments: { userName: user.userName, date: Date(), comment: body.comment, commentId: body.commentId } } } }).then(async value => {
         if (value.Result == true)
           response = { Result: true, Response: { status: "Success", user: user.userName } }
-        // socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, commentedby: user.userName, commentId: body.commentId, postId: body.id, type:"comment"} })
+        socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, commentedby: user.userName, commentId: body.commentId, postId: body.id, type:"comment"} })
         // await validator.sendnotification('dasf',
         //   {
         //     notification: {
@@ -899,7 +899,7 @@ class requestdata extends dbservices {
       }).then(async value => {
         if (value.Result) {
           response = { Result: true, Response: { status: "Success", user: body.user } }
-          // socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, followedby: user.userName, id: body.id , type:"follow"} })
+          socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, followedby: user.userName, id: body.id , type:"follow"} })
           // await validator.sendnotification('dasf',
           //   {
           //     notification: {
@@ -965,7 +965,7 @@ class requestdata extends dbservices {
         }).then(async value => {
           if (value.Result) {
             response = { Result: true, Response: { status: "Success", user: user.userName } }
-            // socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, likedby: user.userName, postId: body.id, type:"like" } })
+            socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, likedby: user.userName, postId: body.id, type:"like" } })
             // await validator.sendnotification('dasf',
             //   {
             //     notification: {
