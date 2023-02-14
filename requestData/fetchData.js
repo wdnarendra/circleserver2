@@ -759,7 +759,7 @@ class requestdata extends dbservices {
       await this.updateRequestData("Comment", { who: { id: body.id, type: body.type }, update: { $push: { comments: { userName: user.userName, date: Date(), comment: body.comment, commentId: body.commentId } } } }).then(async value => {
         if (value.Result == true)
           response = { Result: true, Response: { status: "Success", user: user.userName } }
-        // socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, commentedby: user.userName, commentId: body.commentId } })
+        // socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, commentedby: user.userName, commentId: body.commentId, postId: body.id } })
         // await validator.sendnotification('dasf',
         //   {
         //     notification: {
