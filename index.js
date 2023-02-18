@@ -38,6 +38,21 @@ app.post('/api', async (req, res) => {
         res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Failed, responseMessage.statusCode.BadRequest, responseMessage.statusMessages.BadRequestErr)))
     }
     switch (request.operationName.toLowerCase()) {
+      case "postview":
+        const checktoken = await validator.validatejwt(req.body.payload.jwt)
+        if (checktoken.Result) {
+          req.body.payload.user = checktoken.Response
+          let temp113 = await appdata.postview(req.body.payload)
+          if (temp113.Result) {
+            res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Success, responseMessage.statusCode.Accepted, temp113.Response)))
+          }
+          else {
+            res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Failed, responseMessage.statusCode.BadRequest, false)))
+          }
+        } else {
+          res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Failed, responseMessage.statusCode.BadRequest, false)))
+        }
+        break
       case "isuserunique":
         let temp11 = await appdata.checkuserName(req.body.payload)
         if (temp11.Result) {
