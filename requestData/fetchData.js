@@ -818,12 +818,14 @@ class requestdata extends dbservices {
         //     }
         //   }
         // )
-        // await expo({
-        //   to: pushToken,
-        //   sound: 'default',
-        //   body: `${user.userName commented on your post}`,
-        //   data: { postID: body.id },
-        // })
+        const token = await this.readRequestData('UserSockets', { userName: body.id.split('-')[0] })
+        if (token.length && token[0].expoToken)
+          await expo({
+            to: token[0].expoToken,
+            sound: 'default',
+            body: `${user.userName} commented on your post`,
+            data: { postID: body.id },
+          })
       }).catch(error => {
         response = error
       })
@@ -839,7 +841,7 @@ class requestdata extends dbservices {
         body.filePath = "nopicture.circle"
       else {
         postbuffer = Buffer.from(body.filePath, 'base64')
-        await awsservice.uploadToS3('circlepir2', 'image/jpg', postbuffer, `${body.user.userName}/${body.user.userName}/${body.postId}`).then(value => {
+        await awsservice.uploadToS3('circlepir2', 'image/jpg', postbuffer, `${body.user.userName} / ${body.user.userName} / ${body.postId}`).then(value => {
           body.filePath = value.Response.Location
         }).catch(error => {
           response = { Result: false, Response: error }
@@ -958,12 +960,14 @@ class requestdata extends dbservices {
           //     }
           //   }
           // )
-          // await expo({
-          //   to: pushToken,
-          //   sound: 'default',
-          //   body: `${user.userName commented on your post}`,
-          //   data: { postID: body.id },
-          // })
+          const token = await this.readRequestData('UserSockets', { userName: body.id.split('-')[0] })
+          if (token.length && token[0].expoToken)
+            await expo({
+              to: token[0].expoToken,
+              sound: 'default',
+              body: `${user.userName} commented on your post`,
+              data: { postID: body.id },
+            })
         }
       }).catch(error => {
         err = error
@@ -1024,12 +1028,14 @@ class requestdata extends dbservices {
             //     }
             //   }
             // )
-            // await expo({
-            //   to: pushToken,
-            //   sound: 'default',
-            //   body: `${user.userName commented on your post}`,
-            //   data: { postID: body.id },
-            // })
+            const token = await this.readRequestData('UserSockets', { userName: body.id.split('-')[0] })
+            if (token.length && token[0].expoToken)
+              await expo({
+                to: token[0].expoToken,
+                sound: 'default',
+                body: `${user.userName} commented on your post`,
+                data: { postID: body.id },
+              })
           }
           else response = { Result: false, Response: responseMessage.statusMessages.noDataFoundErr }
         }).catch(err => {
