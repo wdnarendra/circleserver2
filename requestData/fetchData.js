@@ -965,7 +965,7 @@ class requestdata extends dbservices {
             await expo([{
               to: token[0].expoToken,
               sound: 'default',
-              body: `${user.userName} commented on your post`,
+              body: `${user.userName} follow you`,
               data: { postID: body.id },
             }])
         }
@@ -1033,7 +1033,7 @@ class requestdata extends dbservices {
               await expo([{
                 to: token[0].expoToken,
                 sound: 'default',
-                body: `${user.userName} commented on your post`,
+                body: `${user.userName} liked on your post`,
                 data: { postID: body.id },
               }])
           }
