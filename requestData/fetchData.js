@@ -820,12 +820,12 @@ class requestdata extends dbservices {
         // )
         const token = await this.readRequestData('UserSockets', { userName: body.id.split('-')[0] })
         if (token.length && token[0].expoToken)
-          await expo({
+          await expo([{
             to: token[0].expoToken,
             sound: 'default',
             body: `${user.userName} commented on your post`,
             data: { postID: body.id },
-          })
+          }])
       }).catch(error => {
         response = error
       })
@@ -962,12 +962,12 @@ class requestdata extends dbservices {
           // )
           const token = await this.readRequestData('UserSockets', { userName: body.id.split('-')[0] })
           if (token.length && token[0].expoToken)
-            await expo({
+            await expo([{
               to: token[0].expoToken,
               sound: 'default',
               body: `${user.userName} commented on your post`,
               data: { postID: body.id },
-            })
+            }])
         }
       }).catch(error => {
         err = error
@@ -1030,12 +1030,12 @@ class requestdata extends dbservices {
             // )
             const token = await this.readRequestData('UserSockets', { userName: body.id.split('-')[0] })
             if (token.length && token[0].expoToken)
-              await expo({
+              await expo([{
                 to: token[0].expoToken,
                 sound: 'default',
                 body: `${user.userName} commented on your post`,
                 data: { postID: body.id },
-              })
+              }])
           }
           else response = { Result: false, Response: responseMessage.statusMessages.noDataFoundErr }
         }).catch(err => {

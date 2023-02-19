@@ -3,5 +3,5 @@ require('dotenv').config('../.env')
 let expo = new Expo({ accessToken: process.env.expoToken })
 
 module.exports = async (msg) => {
-    await expo.sendPushNotificationsAsync(msg)
+    return await expo.sendPushNotificationsAsync(msg)
 }
