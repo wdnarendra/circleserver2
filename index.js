@@ -187,7 +187,7 @@ app.post('/api', async (req, res) => {
         let result = validator.validatejwt(req.body.payload.jwt)
         if (result.Result) {
           let user = result.Response
-          let result2 = await appdata.followedcommunity(user.userName)
+          let result2 = await appdata.followedcommunity(user.userName, req.body.payload.page)
           if (result2.Result) {
             res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Success, responseMessage.statusCode.Accepted, result2.Response)))
           }

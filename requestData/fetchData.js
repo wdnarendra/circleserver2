@@ -170,7 +170,7 @@ class requestdata extends dbservices {
     //body.loc is a array containing long and lat
     if (!body.interest) body.interest = ''
     let limit = 5
-    return await this.mongo.collection('Community').aggregate([{ $match: { $or: [{ 'community.communityLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } }, { $and: [{ 'community.communityLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } }, { $text: { $search: body.interest } }] }] } }, { $unwind: '$community' }, { $match: { 'community.communityLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } } }, { $skip: (body.page - 1) * limit }, { $limit: limit }]).toArray().then(async value => {
+    return await this.mongo.collection('Community').aggregate([{ $match: { 'community.communityLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } } }, { $unwind: '$community' }, { $match: { 'community.communityLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } } }, { $skip: (body.page - 1) * limit }, { $limit: limit }]).toArray().then(async value => {
       let temp = []
       value.forEach(value => {
         temp.push({ communityInterest: value.community.communityInterest, communityName: value.community.communityName, profilePath: value.community.profilePath, communityId: value.community.communityId, backgroundPath: value.community.backgroundPath })
@@ -722,79 +722,138 @@ class requestdata extends dbservices {
     }
     return response
   }
-  async followedcommunity(userName) {
+  async followedcommunity(userName, page = 1) {
+    let limit = 5
     let response = { Result: true, Response: { posts: [] } }
-    await this.readRequestData('Follows', { userName: userName }).then(async value => {
-      if (value[0]?.communityFollows) {
-        let tempost = []
-        for (let i of value[0].communityFollows) {
-          await this.readRequestData('CommunityPost', { communityId: i }).then(async value => {
-            if (value[0].posts) {
-              let postsize = value[0].posts.length - 1
-              let lastthreepost = postsize - 2
-              for (let i = lastthreepost; i <= postsize; i++) {
-                if (i < 0)
-                  break
-                let data = await this.readRequestData('Community', { 'community.communityId': value[0].communityId }).then(value1 => {
-                  return value1[0].community.filter(value3 => (value3.communityId === value[0].communityId))[0]
-                })
-                ///aap apna gyan yaha peliye
-                await this.readRequestData('Likedby', { id: value[0].posts[i].postId }).then(value2 => {
-                  if (value2.length && value2[0].likedby) {
-                    value[0].posts[i].likedby = value2[0].likedby.length
-                    if (value2[0].likedby.filter(value3 => value3 === userName).length) {
-                      value[0].posts[i].isliked = true
-                    }
-                    else {
-                      value[0].posts[i].isliked = false
-                    }
-                  }
-                  else {
-                    value[0].posts[i].likedby = 0
-                    value[0].posts[i].isliked = false
-                  }
-                })
-                await this.readRequestData('Followers', { id: value[0].communityId }).then(value2 => {
-                  if (value2.length && value2[0].followers) {
-                    value[0].followers = value2[0].followers.length
-                    if (value2[0].followers.filter(value => value === userName).length) {
-                      value[0].isfollowed = true
-                    }
-                    else
-                      value[0].isfollowed = false
-                  }
-                  else {
-                    value[0].isfollowed = false
-                    value[0].followers = 0
-                  }
-                })
-                ///aap apna gyan yaha peliye
-                tempost.push({ isfollowed: value[0].isfollowed, followers: value[0].followers, communityId: value[0].communityId, post: value[0].posts[i], communityName: data.communityName, profilePath: data.profilePath, interest: data.communityInterest })
-              }
-            }
-          })
-        }
-        for (let i = 0; i < tempost.length; i++) {
-          await this.readRequestData('Comment', { id: tempost[i].post.postId }).then(value => {
-            if (value.length && value[0].comments)
-              tempost[i].post.totalcomment = value[0].comments.length
-            else
-              tempost[i].post.totalcomment = 0
-          })
-        }
-        for (let i = 0; i < tempost.length; i++)
-          for (let j = 0; j < tempost.length - i - 1; j++) {
-            if (new Date(tempost[j].post.date) > new Date(tempost[j + 1].post.date)) {
-              let temp = tempost[j]
-              tempost[j] = tempost[j + 1]
-              tempost[j + 1] = temp
-            }
-          }
-        response.Response.posts = tempost.reverse()
+    const res = await this.mongo.collection('Follows').aggregate([{ $match: { userName: userName } }, { $project: { follows: 0, _id: 0 } }, { $unwind: '$communityFollows' }, {
+      $lookup:
+      {
+        from: "CommunityPost",
+        localField: "communityFollows",
+        foreignField: "communityId",
+        as: "post"
       }
-      else
-        response = { Result: true, Response: { posts: [] } }
-    })
+    }, { $unwind: '$post' }, { $unwind: '$post.posts' }, { $project: { post: '$post.posts', communityId: '$communityFollows' } }, { $sort: { 'post.date': -1 } }, { $skip: (page - 1) * limit }, { $limit: limit }]).toArray()
+    // console.log(res)
+    for (let i = 0; i < res.length; i++) {
+      let data = await this.readRequestData('Community', { 'community.communityId': res[i].communityId }).then(value1 => {
+        return value1[0].community.filter(value3 => (value3.communityId === res[i].communityId))[0]
+      })
+      res[i].communityName = data.communityName
+      res[i].profilePath = data.profilePath
+      res[i].interest = data.communityInterest
+      await this.readRequestData('Likedby', { id: res[i].post.postId }).then(value2 => {
+        if (value2.length && value2[0].likedby) {
+          res[i].post.likedby = value2[0].likedby.length
+          if (value2[0].likedby.filter(value3 => value3 === userName).length) {
+            res[i].post.isliked = true
+          }
+          else {
+            res[i].post.isliked = false
+          }
+        }
+        else {
+          res[i].post.likedby = 0
+          res[i].post.isliked = false
+        }
+      })
+      await this.readRequestData('Followers', { id: res[i].communityId }).then(value2 => {
+        if (value2.length && value2[0].followers) {
+          res[i].followers = value2[0].followers.length
+          if (value2[0].followers.filter(value => value === userName).length) {
+            res[i].isfollowed = true
+          }
+          else
+            res[i].isfollowed = false
+        }
+        else {
+          res[i].isfollowed = false
+          res[i].followers = 0
+        }
+      })
+      await this.readRequestData('Comment', { id: res[i].post.postId }).then(value => {
+        if (value.length && value[0].comments)
+          res[i].post.totalcomment = value[0].comments.length
+        else
+          res[i].post.totalcomment = 0
+      })
+    }
+    if (res) {
+      response.Response.posts = res
+    }
+
+
+    // await this.readRequestData('Follows', { userName: userName }).then(async value => {
+    //   if (value[0]?.communityFollows) {
+    //     let tempost = []
+    //     for (let i of value[0].communityFollows) {
+    //       await this.readRequestData('CommunityPost', { communityId: i }).then(async value => {
+    //         if (value[0].posts) {
+    //           let postsize = value[0].posts.length - 1
+    //           let lastthreepost = postsize - 2
+    //           for (let i = lastthreepost; i <= postsize; i++) {
+    //             if (i < 0)
+    //               break
+    //             let data = await this.readRequestData('Community', { 'community.communityId': value[0].communityId }).then(value1 => {
+    //               return value1[0].community.filter(value3 => (value3.communityId === value[0].communityId))[0]
+    //             })
+    //             ///aap apna gyan yaha peliye
+    //             await this.readRequestData('Likedby', { id: value[0].posts[i].postId }).then(value2 => {
+    //               if (value2.length && value2[0].likedby) {
+    //                 value[0].posts[i].likedby = value2[0].likedby.length
+    //                 if (value2[0].likedby.filter(value3 => value3 === userName).length) {
+    //                   value[0].posts[i].isliked = true
+    //                 }
+    //                 else {
+    //                   value[0].posts[i].isliked = false
+    //                 }
+    //               }
+    //               else {
+    //                 value[0].posts[i].likedby = 0
+    //                 value[0].posts[i].isliked = false
+    //               }
+    //             })
+    //             await this.readRequestData('Followers', { id: value[0].communityId }).then(value2 => {
+    //               if (value2.length && value2[0].followers) {
+    //                 value[0].followers = value2[0].followers.length
+    //                 if (value2[0].followers.filter(value => value === userName).length) {
+    //                   value[0].isfollowed = true
+    //                 }
+    //                 else
+    //                   value[0].isfollowed = false
+    //               }
+    //               else {
+    //                 value[0].isfollowed = false
+    //                 value[0].followers = 0
+    //               }
+    //             })
+    //             ///aap apna gyan yaha peliye
+    //             tempost.push({ isfollowed: value[0].isfollowed, followers: value[0].followers, communityId: value[0].communityId, post: value[0].posts[i], communityName: data.communityName, profilePath: data.profilePath, interest: data.communityInterest })
+    //           }
+    //         }
+    //       })
+    //     }
+    //     for (let i = 0; i < tempost.length; i++) {
+    //       await this.readRequestData('Comment', { id: tempost[i].post.postId }).then(value => {
+    //         if (value.length && value[0].comments)
+    //           tempost[i].post.totalcomment = value[0].comments.length
+    //         else
+    //           tempost[i].post.totalcomment = 0
+    //       })
+    //     }
+    //     for (let i = 0; i < tempost.length; i++)
+    //       for (let j = 0; j < tempost.length - i - 1; j++) {
+    //         if (new Date(tempost[j].post.date) > new Date(tempost[j + 1].post.date)) {
+    //           let temp = tempost[j]
+    //           tempost[j] = tempost[j + 1]
+    //           tempost[j + 1] = temp
+    //         }
+    //       }
+    //     response.Response.posts = tempost.reverse()
+    //   }
+    //   else
+    //     response = { Result: true, Response: { posts: [] } }
+    // })
     return response
   }
   async comment(body) {
