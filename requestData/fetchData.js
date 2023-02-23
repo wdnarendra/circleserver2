@@ -882,7 +882,7 @@ class requestdata extends dbservices {
           await expo([{
             to: token[0].expoToken,
             sound: 'default',
-            body: `${user.userName} commented on your post`,
+            body: `${user.userName} commented on your ${body.id.split('-').length > 2 ? 'community post' : 'userprofile post'}`,
             data: { postID: body.id },
           }])
       }).catch(error => {
@@ -1024,7 +1024,7 @@ class requestdata extends dbservices {
             await expo([{
               to: token[0].expoToken,
               sound: 'default',
-              body: `${user.userName} follow you`,
+              body: `${user.userName} started following ${body.id.split('-').length > 1 ? 'your community' : 'you'}`,
               data: { postID: body.id },
             }])
         }
@@ -1092,7 +1092,7 @@ class requestdata extends dbservices {
               await expo([{
                 to: token[0].expoToken,
                 sound: 'default',
-                body: `${user.userName} liked on your post`,
+                body: `${user.userName} likes your ${body.id.split('-').length > 2 ? 'communityPost' : 'post'}`,
                 data: { postID: body.id },
               }])
           }
