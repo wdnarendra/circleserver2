@@ -710,9 +710,22 @@ class requestdata extends dbservices {
             return this.insertOneData("Comment", { id: body.postId, type: "community" })
           }
           else response = { Result: false, Response: responseMessage.statusMessages.dbUpdateErr }
-        }).then(value => {
+        }).then(async value => {
           if (value.Result) {
             response = { Result: true, Response: { status: "Success", user: user.userName } }
+            const fol = await this.readRequestData('Followers', { id: body.id })
+            if (fol.followers && fol.followers.length) {
+              for (let i = 0; i < fol.followers.length; i++) {
+                const token = await this.readRequestData('UserSockets', { userName: fol.followers[i] })
+                if (token.length && token[0].expoToken)
+                  await expo([{
+                    to: token[0].expoToken,
+                    sound: 'default',
+                    body: `${body.id} shared a post`,
+                    data: { postID: body.id },
+                  }])
+              }
+            }
           }
           else response = { Result: false, Response: responseMessage.statusMessages.dbUpdateErr }
         }).catch(error => {
