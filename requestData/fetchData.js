@@ -1105,7 +1105,7 @@ class requestdata extends dbservices {
               await expo([{
                 to: token[0].expoToken,
                 sound: 'default',
-                body: `${user.userName} likes your ${body.id.split('-').length > 2 ? 'communityPost' : 'post'}`,
+                body: `${user.userName} likes your ${body.id.split('-').length > 2 ? 'community post' : 'post'}`,
                 data: { postID: body.id },
               }])
           }
