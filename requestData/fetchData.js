@@ -698,7 +698,7 @@ class requestdata extends dbservices {
             response = { Result: false, Response: error }
           })
         }
-        await this.updateRequestData("CommunityPost", { who: { communityId: body.id }, update: { $push: { posts: { date: Date(), post: body.post, postId: body.postId, filePath: body.file } } } }).then(value => {
+        await this.updateRequestData("CommunityPost", { who: { communityId: body.id }, update: { $push: { posts: { date: new Date(), post: body.post, postId: body.postId, filePath: body.file } } } }).then(value => {
           if (value.Result && value.Status.matchedCount === 1) {
             return this.insertOneData("Likedby", { id: body.postId, type: "community" })
           }
@@ -714,9 +714,9 @@ class requestdata extends dbservices {
           if (value.Result) {
             response = { Result: true, Response: { status: "Success", user: user.userName } }
             const fol = await this.readRequestData('Followers', { id: body.id })
-            if (fol.followers && fol.followers.length) {
-              for (let i = 0; i < fol.followers.length; i++) {
-                const token = await this.readRequestData('UserSockets', { userName: fol.followers[i] })
+            if (fol.length && fol[0]?.followers.length) {
+              for (let i = 0; i < fol[0].followers.length; i++) {
+                const token = await this.readRequestData('UserSockets', { userName: fol[0].followers[i] })
                 if (token.length && token[0].expoToken)
                   await expo([{
                     to: token[0].expoToken,
@@ -729,6 +729,7 @@ class requestdata extends dbservices {
           }
           else response = { Result: false, Response: responseMessage.statusMessages.dbUpdateErr }
         }).catch(error => {
+          console.log(error)
           response = error
         })
       }
@@ -874,7 +875,7 @@ class requestdata extends dbservices {
     const user = body.user
     if (user) {
       body.commentId = body.id + '-' + uuidv1().split('-').join('')
-      await this.updateRequestData("Comment", { who: { id: body.id, type: body.type }, update: { $push: { comments: { userName: user.userName, date: Date(), comment: body.comment, commentId: body.commentId } } } }).then(async value => {
+      await this.updateRequestData("Comment", { who: { id: body.id, type: body.type }, update: { $push: { comments: { userName: user.userName, date: new Date(), comment: body.comment, commentId: body.commentId } } } }).then(async value => {
         if (value.Result == true)
           response = { Result: true, Response: { status: "Success", user: user.userName } }
         socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, commentedby: user.userName, commentId: body.commentId, postId: body.id, type: "comment" } })
@@ -919,7 +920,7 @@ class requestdata extends dbservices {
           response = { Result: false, Response: error }
         })
       }
-      await this.updateRequestData("Posts", { who: { userName: user.userName }, update: { $push: { posts: { date: Date(), post: body.post, postId: body.postId, postLoc: body.postLoc, postInterest: body.postInterest, filePath: body.filePath } } } }).then(value => {
+      await this.updateRequestData("Posts", { who: { userName: user.userName }, update: { $push: { posts: { date: new Date(), post: body.post, postId: body.postId, postLoc: body.postLoc, postInterest: body.postInterest, filePath: body.filePath } } } }).then(value => {
         if (value.Result) {
           return this.insertOneData("Likedby", { id: body.postId, type: "person" })
         }
