@@ -714,22 +714,35 @@ class requestdata extends dbservices {
           if (value.Result) {
             response = { Result: true, Response: { status: "Success", user: user.userName } }
             const fol = await this.readRequestData('Followers', { id: body.id })
+            const c = await this.mongo.collection('Community').aggregate([{ $match: { userName: user.userName } }, { $unwind: '$community' }, { $match: { 'community.communityId': body.id } }]).toArray()
             if (fol.length && fol[0]?.followers.length) {
               for (let i = 0; i < fol[0].followers.length; i++) {
                 const token = await this.readRequestData('UserSockets', { userName: fol[0].followers[i] })
-                if (token.length && token[0].expoToken)
+                if (token.length && token[0].expoToken) {
                   await expo([{
                     to: token[0].expoToken,
                     sound: 'default',
-                    body: `${body.id} shared a post`,
+                    body: `${c[0].community.communityName} shared a post`,
                     data: { postID: body.id },
                   }])
+                }
               }
             }
+            // const userinradius = await this.mongo.collection('Users').find({ location: { $geoWithin: { $centerSphere: [c[0].community.communityLoc.coordinates, 12 / 3963.2] } } }).toArray()
+            // for (let i of userinradius) {
+            //   const token = await this.readRequestData('UserSockets', { userName: i.userName })
+            //   if(token.length&&token[0].expoToken)
+            //   await expo([{
+            //     to: token[0].expoToken,
+            //     sound: 'default',
+            //     body: `${c[0].community.communityName} shared a post`,
+            //     data: { postID: body.id },
+            //   }])
+            // }
           }
           else response = { Result: false, Response: responseMessage.statusMessages.dbUpdateErr }
         }).catch(error => {
-          console.log(error)
+          // console.log(error)
           response = error
         })
       }
