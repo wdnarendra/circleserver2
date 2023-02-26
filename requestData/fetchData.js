@@ -8,6 +8,7 @@ const validator = new validate()
 let expo = require('../modules/exposervice')
 const { io } = require("socket.io-client");
 const socket = io("http://127.0.0.1:3000");
+socket.on('error',()=>{console.log('error')})
 let awsservice = new s3service()
 class requestdata extends dbservices {
   constructor() {
@@ -919,7 +920,7 @@ class requestdata extends dbservices {
     return response
   }
   async post(body) {
-    let response, postbuffer
+    let response, postbuffer,temp
     const user = body.user
     if (user) {
       body.postId = user.userName + "-" + uuidv1().split('-').join('')
@@ -933,7 +934,19 @@ class requestdata extends dbservices {
           response = { Result: false, Response: error }
         })
       }
-      await this.updateRequestData("Posts", { who: { userName: user.userName }, update: { $push: { posts: { date: new Date(), post: body.post, postId: body.postId, postLoc: body.postLoc, postInterest: body.postInterest, filePath: body.filePath } } } }).then(value => {
+      if(body.type==='question') {
+        temp = 'question'
+      }
+      if(body.type==='announcement') {
+        temp = 'announcement'
+      }
+      if(body.type==='discussion') {
+        temp = 'discussion'
+      }
+      else{
+        temp = 'posts'
+      }
+      await this.updateRequestData("Posts", { who: { userName: user.userName }, update: { $push: { [temp]: { date: new Date(), post: body.post, postId: body.postId, postLoc: body.postLoc, postInterest: body.postInterest, filePath: body.filePath } } } }).then(value => {
         if (value.Result) {
           return this.insertOneData("Likedby", { id: body.postId, type: "person" })
         }
