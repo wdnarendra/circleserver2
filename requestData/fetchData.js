@@ -285,12 +285,24 @@ class requestdata extends dbservices {
     return response
   }
   async loadcomment(body) {
-    let response, data = [], limit = 5
+    let response, data = [], limit = 5, temp
     await this.mongo.collection("Comment").aggregate([{ $match: { id: body.id, type: body.type } }, { $unwind: "$comments" }, { $skip: (body.page - 1) * limit }, { $limit: limit }]).toArray().then(async value1 => {
       if (value1.length)
         for (let i = 0; i < value1.length; i++) {
+          if (value1[i].comments.type == "question") {
+            temp = 'question'
+          }
+          else if (value1[i].comments.type == 'announcement') {
+            temp = 'announcement'
+          }
+          else if (value1[i].comments.type == 'discussion') {
+            temp = 'discussion'
+          }
+          else {
+            temp = 'post'
+          }
           await this.readRequestData('Users', { userName: value1[i].comments.userName }).then(value => {
-            data.push({ profilePath: value[0].profilePath, name: value[0].name, userName: value1[i].comments.userName, date: value1[i].comments.date, comment: value1[i].comments.comment, commentId: value1[i].comments.commentId })
+            data.push({ profilePath: value[0].profilePath, name: value[0].name, userName: value1[i].comments.userName, date: value1[i].comments.date, comment: value1[i].comments.comment, type: temp, commentId: value1[i].comments.commentId })
           })
         }
       response = { Result: true, Response: data }
@@ -890,7 +902,7 @@ class requestdata extends dbservices {
     return response
   }
   async comment(body) {
-    let response,temp
+    let response, temp
     const user = body.user
     if (user) {
       if (body.type == "question") {
