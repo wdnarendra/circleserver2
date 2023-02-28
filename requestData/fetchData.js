@@ -8,7 +8,7 @@ const validator = new validate()
 let expo = require('../modules/exposervice')
 const { io } = require("socket.io-client");
 const socket = io("http://127.0.0.1:3000");
-socket.on('error',()=>{console.log('error')})
+socket.on('error', () => { console.log('error') })
 let awsservice = new s3service()
 class requestdata extends dbservices {
   constructor() {
@@ -93,66 +93,71 @@ class requestdata extends dbservices {
     return response
   }
   async userhomepage(body) {
-    let response, limit = 5
-    await this.mongo.collection('Posts').aggregate([{
+    let response, limit = 5, temp
+    if (body.type === 'question') temp = { 'posts.type': 'question' }
+    else if (body.type === 'announcement') temp = { 'posts.type': 'announcement' }
+    else if (body.type === 'discussion') temp = { 'posts.type': 'discussion' }
+    else {
+      temp = {}
+    }
+    const value = await this.mongo.collection('Posts').aggregate([{
       $match:
         { 'posts.postLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } }
-    }, { $unwind: "$posts" }, { $match: { 'posts.postLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } } },
+    }, { $project: { userName: 1, posts: 1, _id: 1 } }, { $unwind: "$posts" }, { $match: { 'posts.postLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } } }, { $match: temp },
     { $sort: { 'posts.date': -1 } }, { "$skip": (body.page - 1) * limit }, { "$limit": limit }
-    ]).toArray().then(async value => {
-      if (value.length) {
-        for (let i = 0; i < value.length; i++) {
-          await this.readRequestData('Likedby', { id: value[i].posts.postId }).then(value1 => {
-            if (value1.length && value1[0].likedby) {
-              if (value1[0].likedby.filter(value => value === body.user.userName).length)
-                value[i].posts.isliked = true
-              else
-                value[i].posts.isliked = false
-              value[i].posts.likedby = value1[0].likedby.length
-            } else {
-              value[i].posts.likedby = 0
+    ]).toArray()
+    if (value.length) {
+      for (let i = 0; i < value.length; i++) {
+        await this.readRequestData('Likedby', { id: value[i].posts.postId }).then(value1 => {
+          if (value1.length && value1[0].likedby) {
+            if (value1[0].likedby.filter(value => value === body.user.userName).length)
+              value[i].posts.isliked = true
+            else
               value[i].posts.isliked = false
-            }
-          })
-        }
-        for (let i = 0; i < value.length; i++) {
-          await this.readRequestData('Comment', { id: value[i].posts.postId }).then(value1 => {
-            if (value1.length && value1[0].comments) {
-              value[i].posts.totalcomment = value1[0].comments.length
-            } else
-              value[i].posts.totalcomment = 0
-          })
-        }
-        for (let i = 0; i < value.length; i++) {
-          await this.readRequestData('Users', { userName: value[i].userName }).then(value1 => {
-            if (value1.length) {
-              value[i].profilePath = value1[0].profilePath
-              value[i].name = value1[0].name
-              value[i].isVerified = value1[0].isVerified
-            }
-          })
-        }
-        for (let i = 0; i < value.length; i++) {
-          await this.readRequestData('Followers', { id: value[i].userName }).then(async value1 => {
-            if (value1.length && value1[0].followers) {
-              value[i].followers = value1[0].followers.length
-              if (value1[0].followers.filter((value) => value === body.user.userName).length)
-                value[i].isfollowed = true
-              else
-                value[i].isfollowed = false
-            }
-            else {
-              value[i].followers = 0
+            value[i].posts.likedby = value1[0].likedby.length
+          } else {
+            value[i].posts.likedby = 0
+            value[i].posts.isliked = false
+          }
+        })
+      }
+      for (let i = 0; i < value.length; i++) {
+        await this.readRequestData('Comment', { id: value[i].posts.postId }).then(value1 => {
+          if (value1.length && value1[0].comments) {
+            value[i].posts.totalcomment = value1[0].comments.length
+          } else
+            value[i].posts.totalcomment = 0
+        })
+      }
+      for (let i = 0; i < value.length; i++) {
+        await this.readRequestData('Users', { userName: value[i].userName }).then(value1 => {
+          if (value1.length) {
+            value[i].profilePath = value1[0].profilePath
+            value[i].name = value1[0].name
+            value[i].isVerified = value1[0].isVerified
+          }
+        })
+      }
+      for (let i = 0; i < value.length; i++) {
+        await this.readRequestData('Followers', { id: value[i].userName }).then(async value1 => {
+          if (value1.length && value1[0].followers) {
+            value[i].followers = value1[0].followers.length
+            if (value1[0].followers.filter((value) => value === body.user.userName).length)
+              value[i].isfollowed = true
+            else
               value[i].isfollowed = false
-            }
-          })
-        }
-        response = { Result: true, Response: value }
+          }
+          else {
+            value[i].followers = 0
+            value[i].isfollowed = false
+          }
+        })
       }
-      else {
-        response = { Result: true, Response: [] }
-      }
-    })
+      response = { Result: true, Response: value }
+    }
+    else {
+      response = { Result: true, Response: [] }
+    }
     return response
   }
   async getusersresultbasedonlocation(body) {
@@ -885,11 +890,23 @@ class requestdata extends dbservices {
     return response
   }
   async comment(body) {
-    let response
+    let response,temp
     const user = body.user
     if (user) {
+      if (body.type == "question") {
+        temp = 'question'
+      }
+      else if (body.type == 'announcement') {
+        temp = 'announcement'
+      }
+      else if (body.type == 'discussion') {
+        temp = 'discussion'
+      }
+      else {
+        temp = 'post'
+      }
       body.commentId = body.id + '-' + uuidv1().split('-').join('')
-      await this.updateRequestData("Comment", { who: { id: body.id, type: body.type }, update: { $push: { comments: { userName: user.userName, date: new Date(), comment: body.comment, commentId: body.commentId } } } }).then(async value => {
+      await this.updateRequestData("Comment", { who: { id: body.id, type: body.type }, update: { $push: { comments: { userName: user.userName, date: new Date(), comment: body.comment, commentId: body.commentId, type: temp } } } }).then(async value => {
         if (value.Result == true)
           response = { Result: true, Response: { status: "Success", user: user.userName } }
         socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, commentedby: user.userName, commentId: body.commentId, postId: body.id, type: "comment" } })
@@ -920,7 +937,7 @@ class requestdata extends dbservices {
     return response
   }
   async post(body) {
-    let response, postbuffer,temp
+    let response, postbuffer, temp
     const user = body.user
     if (user) {
       body.postId = user.userName + "-" + uuidv1().split('-').join('')
@@ -934,19 +951,19 @@ class requestdata extends dbservices {
           response = { Result: false, Response: error }
         })
       }
-      if(body.type==='question') {
+      if (body.type == "question") {
         temp = 'question'
       }
-      if(body.type==='announcement') {
+      else if (body.type == 'announcement') {
         temp = 'announcement'
       }
-      if(body.type==='discussion') {
+      else if (body.type == 'discussion') {
         temp = 'discussion'
       }
-      else{
-        temp = 'posts'
+      else {
+        temp = 'post'
       }
-      await this.updateRequestData("Posts", { who: { userName: user.userName }, update: { $push: { [temp]: { date: new Date(), post: body.post, postId: body.postId, postLoc: body.postLoc, postInterest: body.postInterest, filePath: body.filePath } } } }).then(value => {
+      await this.updateRequestData("Posts", { who: { userName: user.userName }, update: { $push: { posts: { date: new Date(), post: body.post, postId: body.postId, postLoc: body.postLoc, postInterest: body.postInterest, filePath: body.filePath, type: temp } } } }).then(value => {
         if (value.Result) {
           return this.insertOneData("Likedby", { id: body.postId, type: "person" })
         }
