@@ -741,7 +741,7 @@ class requestdata extends dbservices {
                     to: token[0].expoToken,
                     sound: 'default',
                     body: `${c[0].community.communityName} shared a post`,
-                    data: { postID: body.id },
+                    data: { url:`/post/${body.id}`,postID: body.id },
                   }])
                 }
               }
@@ -940,7 +940,7 @@ class requestdata extends dbservices {
             to: token[0].expoToken,
             sound: 'default',
             body: `${user.userName} commented on your ${body.id.split('-').length > 2 ? 'community post' : 'userprofile post'}`,
-            data: { postID: body.id },
+            data: { url:`/post/${body.id}`,postID: body.id },
           }])
       }).catch(error => {
         response = error
@@ -1094,7 +1094,7 @@ class requestdata extends dbservices {
               to: token[0].expoToken,
               sound: 'default',
               body: `${user.userName} started following ${body.id.split('-').length > 1 ? 'your community' : 'you'}`,
-              data: { postID: body.id },
+              data: { url:`/user/${user.userName}`,postID: body.id },
             }])
         }
       }).catch(error => {
@@ -1162,7 +1162,7 @@ class requestdata extends dbservices {
                 to: token[0].expoToken,
                 sound: 'default',
                 body: `${user.userName} liked your ${body.id.split('-').length > 2 ? 'community post' : 'post'}`,
-                data: { postID: body.id },
+                data: { url:`/post/${body.id}`,postID: body.id },
               }])
           }
           else response = { Result: false, Response: responseMessage.statusMessages.noDataFoundErr }
