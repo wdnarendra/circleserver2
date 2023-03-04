@@ -996,6 +996,8 @@ class requestdata extends dbservices {
             const useruser = await this.readRequestData('Users', { userName: user.userName })
             const userinradius = await this.mongo.collection('Users').find({ location: { $geoWithin: { $centerSphere: [useruser[0].location?.coordinates, 12 / 3963.2] } } }).toArray()
             for (let i of userinradius) {
+              if (i.userName === user.userName)
+                continue
               const token = await this.readRequestData('UserSockets', { userName: i.userName })
               if (token.length && token[0].expoToken) {
                 let notibody
