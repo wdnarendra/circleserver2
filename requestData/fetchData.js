@@ -1006,10 +1006,10 @@ class requestdata extends dbservices {
                   notibody = `${useruser[0].name} has shared an announcement with your city`
                 }
                 else if (body.type == 'discussion') {
-                  temp = `${useruser[0].name} has started a discussion`
+                  notibody = `${useruser[0].name} has started a discussion`
                 }
                 else {
-                  temp = `${useruser[0].name} shared a post`
+                  notibody = `${useruser[0].name} shared a post`
                 }
                 await expo([{
                   to: token[0].expoToken,
