@@ -741,7 +741,7 @@ class requestdata extends dbservices {
                     to: token[0].expoToken,
                     sound: 'default',
                     body: `${c[0].community.communityName} shared a post`,
-                    data: { url:`/post/${body.id}`,postID: body.id },
+                    data: { url: `/post/${body.id}`, postID: body.id },
                   }])
                 }
               }
@@ -921,27 +921,29 @@ class requestdata extends dbservices {
       await this.updateRequestData("Comment", { who: { id: body.id, type: body.type }, update: { $push: { comments: { userName: user.userName, date: new Date(), comment: body.comment, commentId: body.commentId, type: temp } } } }).then(async value => {
         if (value.Result == true)
           response = { Result: true, Response: { status: "Success", user: user.userName } }
-        socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, commentedby: user.userName, commentId: body.commentId, postId: body.id, type: "comment" } })
-        // await validator.sendnotification('dasf',
-        //   {
-        //     notification: {
-        //       title: 'Title of your push notification',
-        //       body: 'Body of your push notification'
-        //     },
-        //     data: {
-        //       my_key: 'my value',
-        //       my_another_key: 'my another value'
-        //     }
-        //   }
-        // )
-        const token = await this.readRequestData('UserSockets', { userName: body.id.split('-')[0] })
-        if (token.length && token[0].expoToken)
-          await expo([{
-            to: token[0].expoToken,
-            sound: 'default',
-            body: `${user.userName} commented on your ${body.id.split('-').length > 2 ? 'community post' : 'userprofile post'}`,
-            data: { url:`/post/${body.id}`,postID: body.id },
-          }])
+        if (body.id.split('-')[0] !== user.userName) {
+          socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, commentedby: user.userName, commentId: body.commentId, postId: body.id, type: "comment" } })
+          // await validator.sendnotification('dasf',
+          //   {
+          //     notification: {
+          //       title: 'Title of your push notification',
+          //       body: 'Body of your push notification'
+          //     },
+          //     data: {
+          //       my_key: 'my value',
+          //       my_another_key: 'my another value'
+          //     }
+          //   }
+          // )
+          const token = await this.readRequestData('UserSockets', { userName: body.id.split('-')[0] })
+          if (token.length && token[0].expoToken)
+            await expo([{
+              to: token[0].expoToken,
+              sound: 'default',
+              body: `${user.userName} commented on your ${body.id.split('-').length > 2 ? 'community post' : 'userprofile post'}`,
+              data: { url: `/post/${body.id}`, postID: body.id },
+            }])
+        }
       }).catch(error => {
         response = error
       })
@@ -988,9 +990,35 @@ class requestdata extends dbservices {
           }
           else
             response = { Result: false, Response: responseMessage.statusMessages.dbUpdateErr }
-        }).then(value => {
+        }).then(async value => {
           if (value.Result) {
             response = { Result: true, Response: { status: "Success", user: user.userName } }
+            const useruser = await this.readRequestData('Users', { userName: user.userName })
+            const userinradius = await this.mongo.collection('Users').find({ location: { $geoWithin: { $centerSphere: [useruser[0].location?.coordinates, 12 / 3963.2] } } }).toArray()
+            for (let i of userinradius) {
+              const token = await this.readRequestData('UserSockets', { userName: i.userName })
+              if (token.length && token[0].expoToken) {
+                let notibody
+                if (body.type == "question") {
+                  notibody = `${useruser[0].name} is asking a question, help him find the answer`
+                }
+                else if (body.type == 'announcement') {
+                  notibody = `${useruser[0].name} has shared an announcement with your city`
+                }
+                else if (body.type == 'discussion') {
+                  temp = `${useruser[0].name} has started a discussion`
+                }
+                else {
+                  temp = `${useruser[0].name} shared a post`
+                }
+                await expo([{
+                  to: token[0].expoToken,
+                  sound: 'default',
+                  body: notibody,
+                  data: { url: `/post/${body.id}`, postID: body.id },
+                }])
+              }
+            }
           }
           else
             response = { Result: false, Response: responseMessage.statusMessages.dbUpdateErr }
@@ -1075,27 +1103,29 @@ class requestdata extends dbservices {
       }).then(async value => {
         if (value.Result) {
           response = { Result: true, Response: { status: "Success", user: body.user } }
-          socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, followedby: user.userName, id: body.id, type: "follow" } })
-          // await validator.sendnotification('dasf',
-          //   {
-          //     notification: {
-          //       title: 'Title of your push notification',
-          //       body: 'Body of your push notification'
-          //     },
-          //     data: {
-          //       my_key: 'my value',
-          //       my_another_key: 'my another value'
-          //     }
-          //   }
-          // )
-          const token = await this.readRequestData('UserSockets', { userName: body.id.split('-')[0] })
-          if (token.length && token[0].expoToken)
-            await expo([{
-              to: token[0].expoToken,
-              sound: 'default',
-              body: `${user.userName} started following ${body.id.split('-').length > 1 ? 'your community' : 'you'}`,
-              data: { url:`/user/${user.userName}`,postID: body.id },
-            }])
+          if (body.id.split('-')[0] !== user.userName) {
+            socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, followedby: user.userName, id: body.id, type: "follow" } })
+            // await validator.sendnotification('dasf',
+            //   {
+            //     notification: {
+            //       title: 'Title of your push notification',
+            //       body: 'Body of your push notification'
+            //     },
+            //     data: {
+            //       my_key: 'my value',
+            //       my_another_key: 'my another value'
+            //     }
+            //   }
+            // )
+            const token = await this.readRequestData('UserSockets', { userName: body.id.split('-')[0] })
+            if (token.length && token[0].expoToken)
+              await expo([{
+                to: token[0].expoToken,
+                sound: 'default',
+                body: `${user.userName} started following ${body.id.split('-').length > 1 ? 'your community' : 'you'}`,
+                data: { url: `/user/${user.userName}`, postID: body.id },
+              }])
+          }
         }
       }).catch(error => {
         err = error
@@ -1143,27 +1173,29 @@ class requestdata extends dbservices {
         }).then(async value => {
           if (value.Result) {
             response = { Result: true, Response: { status: "Success", user: user.userName } }
-            socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, likedby: user.userName, postId: body.id, type: "like" } })
-            // await validator.sendnotification('dasf',
-            //   {
-            //     notification: {
-            //       title: 'Title of your push notification',
-            //       body: 'Body of your push notification'
-            //     },
-            //     data: {
-            //       my_key: 'my value',
-            //       my_another_key: 'my another value'
-            //     }
-            //   }
-            // )
-            const token = await this.readRequestData('UserSockets', { userName: body.id.split('-')[0] })
-            if (token.length && token[0].expoToken)
-              await expo([{
-                to: token[0].expoToken,
-                sound: 'default',
-                body: `${user.userName} liked your ${body.id.split('-').length > 2 ? 'community post' : 'post'}`,
-                data: { url:`/post/${body.id}`,postID: body.id },
-              }])
+            if (body.id.split('-')[0] !== user.userName) {
+              socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, likedby: user.userName, postId: body.id, type: "like" } })
+              // await validator.sendnotification('dasf',
+              //   {
+              //     notification: {
+              //       title: 'Title of your push notification',
+              //       body: 'Body of your push notification'
+              //     },
+              //     data: {
+              //       my_key: 'my value',
+              //       my_another_key: 'my another value'
+              //     }
+              //   }
+              // )
+              const token = await this.readRequestData('UserSockets', { userName: body.id.split('-')[0] })
+              if (token.length && token[0].expoToken)
+                await expo([{
+                  to: token[0].expoToken,
+                  sound: 'default',
+                  body: `${user.userName} liked your ${body.id.split('-').length > 2 ? 'community post' : 'post'}`,
+                  data: { url: `/post/${body.id}`, postID: body.id },
+                }])
+            }
           }
           else response = { Result: false, Response: responseMessage.statusMessages.noDataFoundErr }
         }).catch(err => {
