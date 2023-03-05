@@ -110,6 +110,7 @@ app.post('/api', async (req, res) => {
         break
       case "getusersresultbasedonlocation":
         if (validator.validatejwt(req.body.payload.jwt).Result) {
+          req.body.payload.user = validator.validatejwt(req.body.payload.jwt).Response.userName
           let temp = await appdata.getusersresultbasedonlocation(req.body.payload)
           if (temp.Result) {
             res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Success, responseMessage.statusCode.Accepted, temp.Response)))

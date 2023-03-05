@@ -173,9 +173,10 @@ class requestdata extends dbservices {
   async getusersresultbasedonlocation(body) {
     //body.loc is a array containing long and lat
     let limit = 5
+    const user = await this.readRequestData('Users', { userName: body.user })[0]
     return await this.mongo.collection('Users').find({ location: { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } }).skip((body.page - 1) * limit).limit(limit).toArray().then(value => {
       let data = value.map((value => {
-        return { userName: value.userName, name: value.name, profilePath: value.profilePath, isVerified: value.isVerified }
+        return { userName: value.userName, name: value.name, profilePath: value.profilePath, isVerified: value.isVerified, interest: value.interest }
       }))
       return { Result: true, Response: data }
     }).catch(error => {
@@ -680,8 +681,10 @@ class requestdata extends dbservices {
         }
         else response = { Result: false, Response: responseMessage.statusMessages.noDataInDbErr }
       })
-        .then(value => {
+        .then(async value => {
           if (value.Result) {
+            await this.updateRequestData('Follows', { who: { userName: user.userName }, update: { $push: { communityFollows: body.id } } })
+            await this.updateRequestData('Followers', { who: { id: body.id }, update: { $push: { followers: user.userName } } })
             return this.insertOneData("CommunityPost", { communityId: body.id })
           }
           else
