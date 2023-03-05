@@ -100,6 +100,16 @@ class requestdata extends dbservices {
     else {
       temp = {}
     }
+    await this.updateRequestData('Users', {
+      who: { userName: body.user.userName }, update: {
+        $set: {
+          location: {
+            type: "Point",
+            coordinates: body.loc
+          }
+        }
+      }
+    })
     const value = await this.mongo.collection('Posts').aggregate([{
       $match:
         { 'posts.postLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } }
@@ -735,6 +745,8 @@ class requestdata extends dbservices {
             const c = await this.mongo.collection('Community').aggregate([{ $match: { userName: user.userName } }, { $unwind: '$community' }, { $match: { 'community.communityId': body.id } }]).toArray()
             if (fol.length && fol[0]?.followers.length) {
               for (let i = 0; i < fol[0].followers.length; i++) {
+                if (fol[0].followers[i] === user.userName)
+                  continue
                 const token = await this.readRequestData('UserSockets', { userName: fol[0].followers[i] })
                 if (token.length && token[0].expoToken) {
                   await expo([{
