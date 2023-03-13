@@ -173,13 +173,27 @@ class requestdata extends dbservices {
   async getusersresultbasedonlocation(body) {
     //body.loc is a array containing long and lat
     let limit = 5
-    const user = await this.readRequestData('Users', { userName: body.user })[0]
-    return await this.mongo.collection('Users').find({ location: { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } }).skip((body.page - 1) * limit).limit(limit).toArray().then(value => {
-      let data = value.map((value => {
+    if (!body.page) body.page = 1
+    return await this.mongo.collection('Users').find({ location: { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } }).toArray().then(async value => {
+      const temp = [], temp2 = []
+      const u = await this.readRequestData('Users', { userName: body.user })
+      for (let j = 0; j < value.length; j++) {
+        for (let i of u[0].interest) {
+          if (value[j].interest?.includes(i)) {
+            temp.push(value[j])
+            break
+          }
+        }
+        temp2.push(value[j])
+      }
+      let t = [...temp, ...temp2]
+      t = t.slice((body.page - 1) * limit, limit)
+      let data = t.map((value => {
         return { userName: value.userName, name: value.name, profilePath: value.profilePath, isVerified: value.isVerified, interest: value.interest }
       }))
       return { Result: true, Response: data }
     }).catch(error => {
+      console.log(error)
       return { Result: false, Response: "error in getresultbasedonlocation api" }
     })
   }
@@ -278,15 +292,14 @@ class requestdata extends dbservices {
     })
     return response
   }
-  async editdetails(body) {
+ async editdetails(body) {
     let response
     const user = body.user
     delete body.user
+    delete body.jwt
     await this.updateRequestData("Users", {
       who: { userName: user.userName }, update: {
-        $set: {
-          body
-        }
+        $set:   body
       }
     }).then(value => {
       response = { Result: true, Response: "sucess" }
