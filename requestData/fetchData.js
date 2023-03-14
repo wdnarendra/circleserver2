@@ -191,6 +191,16 @@ class requestdata extends dbservices {
       let data = t.map((value => {
         return { userName: value.userName, name: value.name, profilePath: value.profilePath, isVerified: value.isVerified, interest: value.interest }
       }))
+      for (let i = 0; i < data.length; i++) {
+        const te = await this.readRequestData('Followers', { id: data[i].userName })
+        if (te.length && te[0].followers) {
+          if (te[0].followers.filter((value) => (value === body.user)).length) {
+            data[i].isfollowed = true
+          }
+          else
+            data[i].isfollowed = false
+        }
+      }
       return { Result: true, Response: data }
     }).catch(error => {
       console.log(error)
@@ -292,14 +302,14 @@ class requestdata extends dbservices {
     })
     return response
   }
- async editdetails(body) {
+  async editdetails(body) {
     let response
     const user = body.user
     delete body.user
     delete body.jwt
     await this.updateRequestData("Users", {
       who: { userName: user.userName }, update: {
-        $set:   body
+        $set: body
       }
     }).then(value => {
       response = { Result: true, Response: "sucess" }
