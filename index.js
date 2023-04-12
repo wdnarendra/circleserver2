@@ -40,7 +40,7 @@ app.post('/api', async (req, res) => {
           request.payload.user = response.Response
           appdata.genearatecode = funcappdata//this thing is most important thing because appdata method has this.methods which does not execute if we does not use appdata instance and after assigning a new variable to appdata.method the new variable does know how to represent this keyword in the method that why it is important
           const result = await appdata.genearatecode(request.payload, appdata)
-          if (result?.Result) {
+          if (result.Result) {
             res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Success, responseMessage.statusCode.Ok, result.Response)))
           }
           else {
