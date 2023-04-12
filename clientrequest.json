@@ -1,0 +1,117 @@
+{
+    "inputrequest": {
+        "operationName": "operationName",
+        "payload": {}
+    },
+    "signup": {
+        "mobileNumber": 9664210879
+    },
+    "adddetails": {
+        "mobileNumber": 9664210879,
+        "userName": "somerandom",
+        "location": {
+            "type": "Point",
+            "coordinates": [
+                -73.856077,
+                40.848447
+            ]
+        },
+        "gender": "male",
+        "interest": [
+            "cricket",
+            "tennis"
+        ],
+        "dob":"dob",
+        "name": "Karthik vijay",
+        "profilePath": "s3/profile.png",
+        "backgroundPath": "s3/background.png",
+        "email":"email"
+    },
+    "post": {
+        "jwt": "jwt",
+        "post": "this is first post",
+        "postLoc": {
+            "type": "Point",
+            "coordinates": [
+                5,
+                6
+            ]
+        },
+        "filePath": "s3",
+        "postInterest": [
+            "badminton",
+            "other"
+        ]
+    },
+    "follow": {
+        "jwt": "jwt",
+        "id": "somerandom-77675080548011ed9b1f1f47a4c9713a",
+        "type": "person/community"
+    },
+    "likes": {
+        "jwt": "jwt",
+        "id": "somerandom-fecc7ca1547e11ed8148730b08add3e7",
+        "type": "person/community"
+    },
+    "comment": {
+        "jwt": "jwt",
+        "type": "person/community",
+        "comment": "hello first comment",
+        "id": "somerandom-77675080548011ed9b1f1f47a4c9713a-f04ef9f0548311ed8c89f5ae3b2f3b7"
+    },
+    "createcommunity": {
+        "jwt": "jwt",
+        "name": "noathing",
+        "type":"public/private",
+        "interest": [
+            "cricket",
+            "music"
+        ],
+        "loc": {
+            "type": "Point",
+            "coordinates": [
+                5,
+                6
+            ]
+        },
+        "profile": "s3",
+        "background": "s3",
+        "description": "laksjdfklsjfdjlkasjdflkj"
+    },
+    "communitypost": {
+        "jwt": "jwt",
+        "id": "somerandom-77675080548011ed9b1f1f47a4c9713a",
+        "post": "this is first communitypost",
+        "file":"s3"
+    },
+    "loadcomment":{
+        "id":"somerandom-77675080548011ed9b1f1f47a4c9713a-f04ef9f0548311ed8c89f5ae3b2f3b7",
+        "type":"public/community"
+    },
+    "editcommunity":{
+        "jwt": "jwt",
+        "name": "noathing",
+        "type":"public/private",
+        "interest": [
+            "cricket",
+            "music"
+        ],
+        "loc": {
+            "type": "Point",
+            "coordinates": [
+                5,
+                6
+            ]
+        },
+        "profile": "s3",
+        "background": "s3",
+        "description": "laksjdfklsjfdjlkasjdflkj"
+    },
+    "userprofile":{
+        "jwt":"jwt"
+    },
+    "communityview":{
+        "jwt":"jwt",
+        "id":"somerandom-77675080548011ed9b1f1f47a4c9713a"
+    }
+}

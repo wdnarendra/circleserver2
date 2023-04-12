@@ -1,0 +1,67 @@
+{
+    "status": {
+        "Success": "success",
+        "Failed": "fail"
+    },
+    "statusCode": {
+        "Ok": 200,
+        "created": 201,
+        "BadRequest": 480,
+        "Unauthorized": 401,
+        "Forbidden": 403,
+        "NotFound": 464,
+        "InternalserverError": 500,
+        "Conflict": 409,
+        "Accepted": 202
+    },
+    "statusMessages": {
+        "invalidRequestErr": {
+            "errorMsg": "Mandatory fields are not provided",
+            "errorcode": "Error_01"
+        },
+        "BadRequestErr": {
+            "errorMsg": "Invalid values received in the request",
+            "errorcode": "Error_02"
+        },
+        "serverConnectErr": {
+            "errorMsg": "An Unknown Error occurred",
+            "errorcode": "Error_03"
+        },
+        "apiCallErr": {
+            "errorMsg": "Error invoking internal API",
+            "errorCode": "Error_04"
+        },
+        "dbUpdateErr": {
+            "errorCode": "Error_05",
+            "errorMsg": "Error performing database update"
+        },
+        "dbConnectionErr": {
+            "errorCode": "Error_06",
+            "errorMsg": "Database connection Error"
+        },
+        "uploadToS3Err": {
+            "errorcode": "Error_07",
+            "errorMsg": "Error uploading file into S3"
+        },
+        "downloadFromS3Err": {
+            "errorcode": "Error_08",
+            "errorMsg": "Error getting file from s3"
+        },
+        "noDataInDbErr": {
+            "errorcode": "Error_09",
+            "errorMsg": "No Records in DB"
+        },
+        "insertFailErr": {
+            "errorCode": "Error_10",
+            "errorMsg": "Error inserting into database"
+        },
+        "noDataFoundErr": {
+            "errorCode": "Error_11",
+            "errorMsg": "No Data available"
+        },
+        "timeOutErr": {
+            "errorCode": "Error_12",
+            "errorMsg": "Maximum attempt limit reached, try after some time"
+        }
+    }
+}

@@ -1,0 +1,12 @@
+{
+   "awsupload": {
+      "Result": true,
+      "Response": {
+         "ETag": "82632f860e986da34fe1496e9d2d7060",
+         "Location": "https://circlepir2.s3.amazonaws.com/coolboy/",
+         "key": "coolboy/",
+         "Key": "coolboy/",
+         "Bucket": "circlepir2"
+      }
+   }
+}
