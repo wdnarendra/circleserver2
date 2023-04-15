@@ -9,9 +9,26 @@ let firebase = require('./modules/firebaseservice')
 const app = express()
 const body = require('body-parser')
 const cors = require('cors')
+const razorpay = require('./utils/razorpay')
 require('dotenv').config()
 appdata.connectToDb()
 app.use(body.json({ limit: '500mb' }), cors())
+const upload = require('./middleware/upload')
+app.post('/upload', upload.array('file'), (req, res, next) => {
+  try {
+    if (req.files) {
+      res.json({ status: true, data: req.files })
+    }
+    else {
+      res.json({ status: false })
+    }
+  } catch (error) {
+    // console.log(error)
+    res.json({
+      status: false
+    })
+  }
+})
 app.post('/api', async (req, res) => {
   try {
     let request = req.body
@@ -38,6 +55,58 @@ app.post('/api', async (req, res) => {
         res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Failed, responseMessage.statusCode.BadRequest, responseMessage.statusMessages.BadRequestErr)))
     }
     switch (request.operationName.toLowerCase()) {
+      case "bookevent":
+        const orderbody = req.body.payload
+        const amount = await appdata.readRequestData('Events', { _id: orderbody.id })
+        console.log(amount)
+        const order = await razorpay.orders.create({
+          currency: 'INR',
+          amount: amount[0]?.amount,
+          receipt: orderbody.id
+        })
+        res.json({ status: true, data: order })
+        break
+      case "getcategories":
+        res.json({ status: true, response: await appdata.readRequestData('Categories', {}) })
+        break
+      case "createpostv2":
+        const decodedToken = await validator.validatejwt(req.body.payload.jwt)
+        if (decodedToken.Result) {
+          req.body.payload.user = decodedToken.Response.userName
+          let temp1131 = await appdata.createpostv2(req.body.payload)
+          if (temp1131.Result) {
+            res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Success, responseMessage.statusCode.Accepted, temp1131.Response)))
+          }
+          else {
+            res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Failed, responseMessage.statusCode.BadRequest, false)))
+          }
+        } else {
+          res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Failed, responseMessage.statusCode.BadRequest, false)))
+        }
+        break
+      case "readevent":
+        if (!req.body?.payload?.criteria) {
+          req.body.payload.criteria = {}
+        }
+        let eventdata = await appdata.readRequestData('Events', req.body.payload.criteria)
+        eventdata = eventdata.filter((value) => (new Date(value.date) >= new Date()))
+        res.json({ status: true, data: eventdata })
+        break
+      case "createevent":
+        const jj = await validator.validatejwt(req.body.payload.jwt)
+        if (jj.Result) {
+          req.body.payload.user = jj.Response.userName
+          let temp113 = await appdata.createEvent(req.body.payload)
+          if (temp113.Result) {
+            res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Success, responseMessage.statusCode.Accepted, temp113.Response)))
+          }
+          else {
+            res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Failed, responseMessage.statusCode.BadRequest, false)))
+          }
+        } else {
+          res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Failed, responseMessage.statusCode.BadRequest, false)))
+        }
+        break
       case "postview":
         const checktoken = await validator.validatejwt(req.body.payload.jwt)
         if (checktoken.Result) {
@@ -110,7 +179,7 @@ app.post('/api', async (req, res) => {
         break
       case "getusersresultbasedonlocation":
         if (validator.validatejwt(req.body.payload.jwt).Result) {
- req.body.payload.user = validator.validatejwt(req.body.payload.jwt).Response.userName
+          req.body.payload.user = validator.validatejwt(req.body.payload.jwt).Response.userName
           let temp = await appdata.getusersresultbasedonlocation(req.body.payload)
           if (temp.Result) {
             res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Success, responseMessage.statusCode.Accepted, temp.Response)))
@@ -308,6 +377,7 @@ app.post('/api', async (req, res) => {
     }
   }
   catch (error) {
+    console.log(error)
     res.send(JSON.stringify(finalResponse("errorcodecacheerror", responseMessage.status.Failed, responseMessage.statusCode.BadRequest)))
   }
 })

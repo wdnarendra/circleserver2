@@ -14,6 +14,54 @@ class requestdata extends dbservices {
   constructor() {
     super()
   }
+  async createpostv2(body) {
+    const user = body.user
+    delete body.user
+    delete body.jwt
+    body.postId = user + '-' + uuidv1().split('-').join('')
+    body.date = Date()
+    const postData = await this.readRequestData('Posts', { userName: user })
+    if (!postData.length) {
+      const post = await this.insertOneData('Posts', { userName: user, posts: [body] })
+    } else {
+      const post = await this.updateRequestData('Posts', {
+        who: { userName: user }, update: {
+          $push: { posts: body }
+        }
+      })
+    }
+    await this.insertOneData("Likedby", { id: body.postId, type: "person" })
+    await this.insertOneData("Comment", { id: body.postId, type: "person" })
+    const useruser = await this.readRequestData('Users', { userName: user })
+    const userinradius = await this.mongo.collection('Users').find({ location: { $geoWithin: { $centerSphere: [useruser[0].location?.coordinates, 12 / 3963.2] } } }).toArray()
+    for (let i of userinradius) {
+      if (i.userName === user)
+        continue
+      const token = await this.readRequestData('UserSockets', { userName: i.userName })
+      if (token.length && token[0].expoToken) {
+        let notibody
+        if (body.type == "question") {
+          notibody = `${useruser[0].name} is asking a question, help him find the answer`
+        }
+        else if (body.type == 'announcement') {
+          notibody = `${useruser[0].name} has shared an announcement with your city`
+        }
+        else if (body.type == 'discussion') {
+          notibody = `${useruser[0].name} has started a discussion`
+        }
+        else {
+          notibody = `${useruser[0].name} shared a post`
+        }
+        await expo([{
+          to: token[0].expoToken,
+          sound: 'default',
+          body: notibody,
+          data: { url: `/post/${body.id}`, postID: body.id },
+        }])
+      }
+    }
+    return { Result: true, Response: { status: "Success", user: user, body } }
+  }
   async postview(body) {
     let collection, match, temp
     if (body.id.split('-').length === 2)
@@ -114,7 +162,11 @@ class requestdata extends dbservices {
       $match:
         { 'posts.postLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } }
     }, { $project: { userName: 1, posts: 1, _id: 1 } }, { $unwind: "$posts" }, { $match: { 'posts.postLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } } }, { $match: temp },
-    { $sort: { 'posts.date': -1 } }, { "$skip": (body.page - 1) * limit }, { "$limit": limit }
+    {
+      $addFields: {
+        convertedDate: { $toDate: "$posts.date" }
+      }
+    }, { $sort: { convertedDate: -1 } }, { "$skip": (body.page - 1) * limit }, { "$limit": limit }
     ]).toArray()
     if (value.length) {
       for (let i = 0; i < value.length; i++) {
@@ -174,7 +226,7 @@ class requestdata extends dbservices {
     //body.loc is a array containing long and lat
     let limit = 5
     if (!body.page) body.page = 1
-    return await this.mongo.collection('Users').find({ location: { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } }).toArray().then(async value => {
+    return await this.mongo.collection('Users').find({ userName: { $nin: [body.user] }, location: { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } }).toArray().then(async value => {
       const temp = [], temp2 = []
       const u = await this.readRequestData('Users', { userName: body.user })
       for (let j = 0; j < value.length; j++) {
@@ -187,7 +239,9 @@ class requestdata extends dbservices {
         temp2.push(value[j])
       }
       let t = [...temp, ...temp2]
-      t = t.slice((body.page - 1) * limit, limit)
+      const start = (body.page - 1) * limit
+      const end = start + limit
+      t = t.slice(start, end)
       let data = t.map((value => {
         return { userName: value.userName, name: value.name, profilePath: value.profilePath, isVerified: value.isVerified, interest: value.interest }
       }))
@@ -199,6 +253,9 @@ class requestdata extends dbservices {
           }
           else
             data[i].isfollowed = false
+        }
+        else {
+          data[i].isfollowed = false
         }
       }
       return { Result: true, Response: data }
@@ -302,6 +359,19 @@ class requestdata extends dbservices {
     })
     return response
   }
+  async createEvent(body) {
+    let response
+    const user = body.user
+    delete body.user
+    delete body.jwt
+    const u = await this.readRequestData('Events', { userName: user })
+    // console.log(u)
+    if (u.length) {
+      await this.insertOneData('Events', { userName: user, ...body })
+      return { Result: true, Response: { userName: user, ...body } }
+    } else
+      return { Result: false, Response: 'error' }
+  }
   async editdetails(body) {
     let response
     const user = body.user
@@ -311,8 +381,9 @@ class requestdata extends dbservices {
       who: { userName: user.userName }, update: {
         $set: body
       }
-    }).then(value => {
-      response = { Result: true, Response: "sucess" }
+    }).then(async value => {
+      const a = await this.readRequestData('Users', { userName: user.userName })
+      response = { Result: true, Response: { userdata: a[0], editedData: body } }
     }).catch(error => {
       response = error
     })
@@ -335,8 +406,19 @@ class requestdata extends dbservices {
           else {
             temp = 'post'
           }
+          if (value1[i].comments.nested?.length) {
+            for (let j = 0; j < value1[i].comments.nested.length; j++) {
+              const u = await this.readRequestData('Users', { userName: value1[i].comments.nested[j].userName })
+              value1[i].comments.nested[j].profilePath = u[0].profilePath
+              value1[i].comments.nested[j].name = u[0].name
+            }
+          }
           await this.readRequestData('Users', { userName: value1[i].comments.userName }).then(value => {
-            data.push({ profilePath: value[0].profilePath, name: value[0].name, userName: value1[i].comments.userName, date: value1[i].comments.date, comment: value1[i].comments.comment, type: temp, commentId: value1[i].comments.commentId })
+            let nested
+            if (value1[i].comments.nested?.length) {
+              nested = value1[i].comments.nested
+            }
+            data.push({ nested: nested, profilePath: value[0].profilePath, name: value[0].name, userName: value1[i].comments.userName, date: value1[i].comments.date, comment: value1[i].comments.comment, type: temp, commentId: value1[i].comments.commentId })
           })
         }
       response = { Result: true, Response: data }
@@ -630,35 +712,35 @@ class requestdata extends dbservices {
     //   // awsservice.uploadToS3('bucketname', 'contenttype', backgroundbuffer, 'path')
     //   request.payload.backgroundPath = "generates3dynamicpath"
     // }
-    if (temp) {
-      body.userName = body.userName.trim().replace('-', '').toLowerCase()
-      await this.updateRequestData(collectionName, { who: { email: body.email }, update: { $set: body } }).then(value => {
-        if (value.Result) {
-          response = { Result: true, Response: { status: "Success", user: body.userName } }
-        }
-      }).catch(error => {
-        response = error
-      })
-      await this.readRequestData(collectionName, { email: body.email }).then(async value => {
-        if (!value[0]?.flag) {
-          await this.insertOneData("Follows", { userName: body.userName })
-          await this.insertOneData("Followers", { id: body.userName, type: "person" })
-          await this.insertOneData("Likes", { userName: body.userName })
-          await this.insertOneData("Posts", { userName: body.userName })
-          await this.insertOneData("Community", { userName: body.userName })
-          await this.updateRequestData("Users", {
-            who: { userName: body.userName }, update: {
-              $set: {
-                flag: true
-              }
+    // if (temp) {
+    body.userName = body.userName.trim().replace('-', '').toLowerCase()
+    await this.updateRequestData(collectionName, { who: { email: body.email }, update: { $set: body } }).then(value => {
+      if (value.Result) {
+        response = { Result: true, Response: { status: "Success", user: body.userName } }
+      }
+    }).catch(error => {
+      response = error
+    })
+    await this.readRequestData(collectionName, { email: body.email }).then(async value => {
+      if (!value[0]?.flag) {
+        await this.insertOneData("Follows", { userName: body.userName })
+        await this.insertOneData("Followers", { id: body.userName, type: "person" })
+        await this.insertOneData("Likes", { userName: body.userName })
+        await this.insertOneData("Posts", { userName: body.userName })
+        await this.insertOneData("Community", { userName: body.userName })
+        await this.updateRequestData("Users", {
+          who: { userName: body.userName }, update: {
+            $set: {
+              flag: true
             }
-          })
-        }
-      })
-      return response
-    } else {
-      return { Result: false, Response: 'error' }
-    }
+          }
+        })
+      }
+    })
+    return response
+    // } else {
+    //   return { Result: false, Response: 'error' }
+    // }
   }
   async createcommunity(body) {
     let response, profilebuffer, backgroundbuffer, temp1, temp2
@@ -943,24 +1025,37 @@ class requestdata extends dbservices {
     let response, temp
     const user = body.user
     if (user) {
-      if (body.type == "question") {
-        temp = 'question'
-      }
-      else if (body.type == 'announcement') {
-        temp = 'announcement'
-      }
-      else if (body.type == 'discussion') {
-        temp = 'discussion'
-      }
-      else {
-        temp = 'post'
-      }
       body.commentId = body.id + '-' + uuidv1().split('-').join('')
-      await this.updateRequestData("Comment", { who: { id: body.id, type: body.type }, update: { $push: { comments: { userName: user.userName, date: new Date(), comment: body.comment, commentId: body.commentId, type: temp } } } }).then(async value => {
+      if (body.type == "person") {
+        const value = await this.readRequestData('Posts', { userName: body.id.split('-')[0] })
+        temp = value[0].posts?.filter((value) => (value.postId === body.id))[0]
+        temp = temp.type
+      }
+      if (!temp) { temp = 'post' }
+      let t = 'comments', who = { id: body.id, type: body.type }
+      if (body.nested === true) {
+        t = 'comments.$.nested'
+        who = { id: body.id, type: body.type, 'comments.commentId': body.commentid }
+        const check = await this.readRequestData('Comment', { id: body.id })
+        if (check[0]?.comments?.filter((value) => (value.commentId === body.commentid))[0]?.userName !== user.userName) {
+          const c = await this.readRequestData('Comment', { id: body.id })
+          const sendnoti = c[0].comments?.filter((value) => (value.commentId === body.commentid))[0].userName
+          socket.emit('sendnotificationtouser', { userName: sendnoti, notification: { user: user.userName, commentedby: user.userName, commentId: body.commentId, postId: body.id, type: "comment", nested: true, posttype: temp } })
+          const token = await this.readRequestData('UserSockets', { userName: sendnoti })
+          if (token.length && token[0].expoToken)
+            await expo([{
+              to: token[0].expoToken,
+              sound: 'default',
+              body: `${user.userName} replied to your comment`,
+              data: { url: `/post/${body.id}`, postID: body.id },
+            }])
+        }
+      }
+      await this.updateRequestData("Comment", { who: who, update: { $push: { [t]: { userName: user.userName, date: new Date(), comment: body.comment, commentId: body.commentId, type: temp } } } }).then(async value => {
         if (value.Result == true)
-          response = { Result: true, Response: { status: "Success", user: user.userName } }
+          response = { Result: true, Response: { status: "Success", res: { userName: user.userName, date: new Date(), comment: body.comment, commentId: body.commentId, type: temp } } }
         if (body.id.split('-')[0] !== user.userName) {
-          socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, commentedby: user.userName, commentId: body.commentId, postId: body.id, type: "comment" } })
+          socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, commentedby: user.userName, commentId: body.commentId, postId: body.id, type: "comment", posttype: temp } })
           // await validator.sendnotification('dasf',
           //   {
           //     notification: {
@@ -1193,8 +1288,13 @@ class requestdata extends dbservices {
         collection = "CommunityPost"
         option = "communityId"
       }
+      let tem
       await this.readRequestData(collection, { [option]: id, "posts.postId": body.id }).then(value => {
         if (value.length === 1) {
+          if (body.type == "person") {
+            tem = value[0].posts.filter((value) => (value.postId === body.id))[0]
+            tem = tem.type
+          }
           return this.readRequestData("Likes", { userName: user.userName, [type]: body.id })
         }
         else response = { Result: false, Response: responseMessage.statusMessages.noDataFoundErr }
@@ -1214,7 +1314,7 @@ class requestdata extends dbservices {
           if (value.Result) {
             response = { Result: true, Response: { status: "Success", user: user.userName } }
             if (body.id.split('-')[0] !== user.userName) {
-              socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, likedby: user.userName, postId: body.id, type: "like" } })
+              socket.emit('sendnotificationtouser', { userName: body.id.split('-')[0], notification: { user: user.userName, likedby: user.userName, postId: body.id, type: "like", posttype: tem ? tem : 'post' } })
               // await validator.sendnotification('dasf',
               //   {
               //     notification: {
