@@ -19,7 +19,7 @@ class requestdata extends dbservices {
     delete body.user
     delete body.jwt
     body.postId = user + '-' + uuidv1().split('-').join('')
-    body.date = Date()
+    body.date = new Date()
     const postData = await this.readRequestData('Posts', { userName: user })
     if (!postData.length) {
       const post = await this.insertOneData('Posts', { userName: user, posts: [body] })
