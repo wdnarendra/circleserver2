@@ -334,21 +334,21 @@ class requestdata extends dbservices {
   async editcommunity(body) {
     let response
     const user = body.user
+    delete body.jwt
+    delete body.user
+    let community = await this.readRequestData('Community', { userName: user.userName })
+    community = community[0]
+    community = community.community.filter((value) => (value.communityId === body.communityId))[0]
+    body = { ...community, ...body }
     await this.updateRequestData("Community", {
-      who: { userName: user.userName, "community.communityId": body.id }, update: {
+      who: { userName: user.userName, "community.communityId": body.communityId }, update: {
         $set: {
-          "community.$.communityType": body.communityType,
-          "community.$.communityName": body.communityName,
-          "community.$.communityLoc": body.communityLoc,
-          "community.$.communityInterest": body.communityInterest,
-          "community.$.description": body.description,
-          "community.$.backgroundPath": body.backgroundPath,
-          "community.$.profilePath": body.postInterest
+          "community.$": body,
         }
       }
     }).then(value => {
       if (value.Result) {
-        response = { Result: true, Response: { status: "Success", user: user.userName } }
+        response = { Result: true, Response: { status: "Success", user: user.userName, data: value } }
       }
     }).catch(error => {
       response = error
