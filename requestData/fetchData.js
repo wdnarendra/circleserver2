@@ -162,11 +162,7 @@ class requestdata extends dbservices {
       $match:
         { 'posts.postLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } }
     }, { $project: { userName: 1, posts: 1, _id: 1 } }, { $unwind: "$posts" }, { $match: { 'posts.postLoc': { $geoWithin: { $centerSphere: [body.loc, 12 / 3963.2] } } } }, { $match: temp },
-    {
-      $addFields: {
-        convertedDate: { $toDate: "$posts.date" }
-      } 
-    }, { $sort: { convertedDate: -1 } }, { "$skip": (body.page - 1) * limit }, { "$limit": limit }
+    { $sort: { 'posts.date': -1 } }, { "$skip": (body.page - 1) * limit }, { "$limit": limit }
     ]).toArray()
     if (value.length) {
       for (let i = 0; i < value.length; i++) {
