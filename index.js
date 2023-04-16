@@ -57,11 +57,10 @@ app.post('/api', async (req, res) => {
     switch (request.operationName.toLowerCase()) {
       case "bookevent":
         const orderbody = req.body.payload
-        const amount = await appdata.readRequestData('Events', { _id: orderbody.id })
-        console.log(amount)
+        const amount = await appdata.readRequestData('Events', { _id: require('mongodb').ObjectId(orderbody.id) })
         const order = await razorpay.orders.create({
           currency: 'INR',
-          amount: amount[0]?.amount,
+          amount: amount[0]?.amount*100,
           receipt: orderbody.id
         })
         res.json({ status: true, data: order })
@@ -89,7 +88,7 @@ app.post('/api', async (req, res) => {
           req.body.payload.criteria = {}
         }
         let eventdata = await appdata.readRequestData('Events', req.body.payload.criteria)
-        eventdata = eventdata.filter((value) => (new Date(value.date) >= new Date()))
+        // eventdata = eventdata.filter((value) => (new Date(value.date) >= new Date()))
         res.json({ status: true, data: eventdata })
         break
       case "createevent":

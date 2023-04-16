@@ -348,7 +348,7 @@ class requestdata extends dbservices {
       }
     }).then(value => {
       if (value.Result) {
-        response = { Result: true, Response: { status: "Success", user: user.userName, data: value } }
+        response = { Result: true, Response: { status: "Success", user: user.userName, data: body } }
       }
     }).catch(error => {
       response = error
@@ -360,9 +360,10 @@ class requestdata extends dbservices {
     const user = body.user
     delete body.user
     delete body.jwt
-    const u = await this.readRequestData('Events', { userName: user })
+    // const u = await this.readRequestData('Events', { userName: user })
     // console.log(u)
-    if (u.length) {
+    body._id =  new (require('mongodb')).ObjectId()
+    if (1) {
       await this.insertOneData('Events', { userName: user, ...body })
       return { Result: true, Response: { userName: user, ...body } }
     } else
