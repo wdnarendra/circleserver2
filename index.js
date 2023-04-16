@@ -88,7 +88,7 @@ app.post('/api', async (req, res) => {
           req.body.payload.criteria = {}
         }
         let eventdata = await appdata.readRequestData('Events', req.body.payload.criteria)
-        // eventdata = eventdata.filter((value) => (new Date(value.date) >= new Date()))
+        eventdata = eventdata.filter((value) => (new Date(value.date) >= new Date()))
         res.json({ status: true, data: eventdata })
         break
       case "createevent":
@@ -398,4 +398,4 @@ function finalResponse(id, statmsg, statcode, res) {
   return finalRes;
 }
 
-app.listen(80)
+app.listen(8080)
