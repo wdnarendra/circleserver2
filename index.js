@@ -55,12 +55,42 @@ app.post('/api', async (req, res) => {
         res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Failed, responseMessage.statusCode.BadRequest, responseMessage.statusMessages.BadRequestErr)))
     }
     switch (request.operationName.toLowerCase()) {
+      case "unlike":
+        const decodedtokennunlike = validator.validatejwt(req.body.payload.jwt)
+        if (decodedtokennunlike.Result) {
+          const body = req.body.payload
+          let temp
+          if (body.type === 'person') {
+            temp = 'personLikes'
+          }
+          else
+            temp = 'communityLikes'
+          await appdata.updateRequestData('Follows', { who: { userName: decodedtokennunlike.Response.userName }, update: { $pull: { [temp]: body.id } } })
+          await appdata.updateRequestData('Followers', { who: { id: body.id }, update: { $pull: { followers: decodedtokennunlike.Response.userName } } })
+          res.json({ status: true })
+        }
+        break
+      case "unfollow":
+        const decodedtokenn = validator.validatejwt(req.body.payload.jwt)
+        if (decodedtokenn.Result) {
+          const body = req.body.payload
+          let temp
+          if (body.type === 'person') {
+            temp = 'follows'
+          }
+          else
+            temp = 'communityFollows'
+          await appdata.updateRequestData('Follows', { who: { userName: decodedtokenn.Response.userName }, update: { $pull: { [temp]: body.id } } })
+          await appdata.updateRequestData('Followers', { who: { id: body.id }, update: { $pull: { followers: decodedtokenn.Response.userName } } })
+          res.json({ status: true })
+        }
+        break
       case "bookevent":
         const orderbody = req.body.payload
         const amount = await appdata.readRequestData('Events', { _id: require('mongodb').ObjectId(orderbody.id) })
         const order = await razorpay.orders.create({
           currency: 'INR',
-          amount: amount[0]?.amount*100,
+          amount: amount[0]?.amount * 100,
           receipt: orderbody.id
         })
         res.json({ status: true, data: order })
