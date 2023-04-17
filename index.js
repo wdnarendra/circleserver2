@@ -55,6 +55,14 @@ app.post('/api', async (req, res) => {
         res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Failed, responseMessage.statusCode.BadRequest, responseMessage.statusMessages.BadRequestErr)))
     }
     switch (request.operationName.toLowerCase()) {
+      case 'editcomment':
+        const decodedtokennedit = validator.validatejwt(req.body.payload.jwt)
+        if (decodedtokennedit.Result) {
+          const body = req.body.payload
+          await appdata.updateRequestData('Comment', { who: { id: body.id, 'comments.commentId': body.commentId }, update: { $set: { 'comments.$.comment': body.comment } } })
+          res.json({ status: true })
+        }
+        break
       case "unlike":
         const decodedtokennunlike = validator.validatejwt(req.body.payload.jwt)
         if (decodedtokennunlike.Result) {
