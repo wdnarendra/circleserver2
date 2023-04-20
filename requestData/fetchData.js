@@ -362,7 +362,8 @@ class requestdata extends dbservices {
     delete body.jwt
     // const u = await this.readRequestData('Events', { userName: user })
     // console.log(u)
-    body._id =  new (require('mongodb')).ObjectId()
+    body.location = { type: 'Point', coordinates: body.location }
+    body._id = new (require('mongodb')).ObjectId()
     if (1) {
       await this.insertOneData('Events', { userName: user, ...body })
       return { Result: true, Response: { userName: user, ...body } }

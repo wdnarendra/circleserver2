@@ -125,6 +125,12 @@ app.post('/api', async (req, res) => {
         if (!req.body?.payload?.criteria) {
           req.body.payload.criteria = {}
         }
+        if (req.body.payload?.criteria?.location) {
+          req.body.payload.criteria.location = {
+            $geoWithin:
+              { $centerSphere: [req.body.payload.criteria.location, 15 / 3963.2] }
+          }
+        }
         let eventdata = await appdata.readRequestData('Events', req.body.payload.criteria)
         eventdata = eventdata.filter((value) => (new Date(value.date) >= new Date()))
         res.json({ status: true, data: eventdata })
