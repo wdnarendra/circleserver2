@@ -95,12 +95,18 @@ app.post('/api', async (req, res) => {
         break
       case "bookevent":
         const orderbody = req.body.payload
-        const amount = await appdata.readRequestData('Events', { _id: require('mongodb').ObjectId(orderbody.id) })
-        const order = await razorpay.orders.create({
-          currency: 'INR',
-          amount: amount[0]?.amount * 100,
-          receipt: orderbody.id
-        })
+        const useruseruseruser = validator.validatejwt(orderbody.jwt)
+        const amount = await appdata.updateRequestData('Events', { who: { _id: require('mongodb').ObjectId(orderbody.id) }, update: { $addToSet: { bookedBy: useruseruseruser.Response.userName } } })
+        if (amount?.Status?.modifiedCount) {
+          console.log('hiii')
+          await appdata.updateRequestData('Events', { who: { _id: require('mongodb').ObjectId(orderbody.id) }, update: { $inc: { slots: -1 } } })
+        }
+        // const order = await razorpay.orders.create({
+        //   currency: 'INR',
+        //   amount: amount[0]?.amount * 100,
+        //   receipt: orderbody.id
+        // })
+        const order = await appdata.readRequestData('Events', { _id: require('mongodb').ObjectId(orderbody.id) })
         res.json({ status: true, data: order })
         break
       case "getcategories":
