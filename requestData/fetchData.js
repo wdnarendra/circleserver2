@@ -30,36 +30,35 @@ class requestdata extends dbservices {
         }
       })
     }
-    await this.insertOneData("Likedby", { id: body.postId, type: "person" })
-    await this.insertOneData("Comment", { id: body.postId, type: "person" })
+    await Promise.all([this.insertOneData("Likedby", { id: body.postId, type: "person" }), this.insertOneData("Comment", { id: body.postId, type: "person" })])
     const useruser = await this.readRequestData('Users', { userName: user })
     const userinradius = await this.mongo.collection('Users').find({ location: { $geoWithin: { $centerSphere: [useruser[0].location?.coordinates, 12 / 3963.2] } } }).toArray()
-    for (let i of userinradius) {
-      if (i.userName === user)
-        continue
-      const token = await this.readRequestData('UserSockets', { userName: i.userName })
-      if (token.length && token[0].expoToken) {
-        let notibody
-        if (body.type == "question") {
-          notibody = `${useruser[0].name} is asking a question, help him find the answer`
+    await Promise.all(userinradius.map(async i => {
+      if (i.userName !== user) {
+        const token = await this.readRequestData('UserSockets', { userName: i.userName })
+        if (token.length && token[0].expoToken) {
+          let notibody
+          if (body.type == "question") {
+            notibody = `${useruser[0].name} is asking a question, help him find the answer`
+          }
+          else if (body.type == 'announcement') {
+            notibody = `${useruser[0].name} has shared an announcement with your city`
+          }
+          else if (body.type == 'discussion') {
+            notibody = `${useruser[0].name} has started a discussion`
+          }
+          else {
+            notibody = `${useruser[0].name} shared a post`
+          }
+          await expo([{
+            to: token[0].expoToken,
+            sound: 'default',
+            body: notibody,
+            data: { url: `/post/${body.id}`, postID: body.id },
+          }])
         }
-        else if (body.type == 'announcement') {
-          notibody = `${useruser[0].name} has shared an announcement with your city`
-        }
-        else if (body.type == 'discussion') {
-          notibody = `${useruser[0].name} has started a discussion`
-        }
-        else {
-          notibody = `${useruser[0].name} shared a post`
-        }
-        await expo([{
-          to: token[0].expoToken,
-          sound: 'default',
-          body: notibody,
-          data: { url: `/post/${body.id}`, postID: body.id },
-        }])
       }
-    }
+    }))
     return { Result: true, Response: { status: "Success", user: user, body } }
   }
   async postview(body) {

@@ -127,6 +127,8 @@ app.post('/api', async (req, res) => {
         }
         break
       case "readevent":
+        const checkcheckcheck = req.body?.payload?.active
+        if (checkcheckcheck) checkcheckcheck = true
         if (req?.body?.payload?.criteria?._id) {
           req.body.payload.criteria._id = require('mongodb').ObjectId(req?.body?.payload?.criteria?._id)
         }
@@ -140,7 +142,19 @@ app.post('/api', async (req, res) => {
           }
         }
         let eventdata = await appdata.readRequestData('Events', req.body.payload.criteria)
-        eventdata = eventdata.filter((value) => (new Date(value.date) >= new Date()))
+        eventdata = await Promise.all(eventdata.map(async (i) => {
+          if (!i.bookedBy) i.bookedBy = []
+          i.bookedBy = await Promise.all(i?.bookedBy?.map(async (i) => {
+            const user = await appdata.readRequestData('Users', { userName: i })
+            return {
+              userName: i,
+              profile: user[0]?.profilePath
+            }
+          }))
+          return i
+        }))
+        if (checkcheckcheck)
+          eventdata = eventdata.filter((value) => (new Date(value.date) >= new Date()))
         res.json({ status: true, data: eventdata })
         break
       case "createevent":
