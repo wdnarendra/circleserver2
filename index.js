@@ -127,8 +127,8 @@ app.post('/api', async (req, res) => {
         }
         break
       case "readevent":
-        const checkcheckcheck = req.body?.payload?.active
-        if (checkcheckcheck) checkcheckcheck = true
+        let checkcheckcheck = req.body?.payload?.active
+        if (typeof checkcheckcheck === 'undefined') checkcheckcheck = true
         if (req?.body?.payload?.criteria?._id) {
           req.body.payload.criteria._id = require('mongodb').ObjectId(req?.body?.payload?.criteria?._id)
         }
