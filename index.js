@@ -126,6 +126,19 @@ app.post('/api', async (req, res) => {
           res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Failed, responseMessage.statusCode.BadRequest, false)))
         }
         break
+      case "editevent":
+        const editeventtoke = validator.validatejwt(req.body.payload.jwt)
+        if (editeventtoke.Result) {
+          const user = editeventtoke.Response.userName
+          delete req.body.payload.jwt
+          const payload = req.body.payload
+          const event = await appdata.readRequestData('Events', { _id: require('mongodb').ObjectId(payload.id) })
+          if (event[0]?.userName === user) {
+            await appdata.updateRequestData('Events', { who: { _id: require('mongodb').ObjectId(payload.id) }, update: { $set: payload } })
+          }
+          res.json({ status: true, data: { ...event[0], ...payload } })
+        }
+        break
       case "readevent":
         let checkcheckcheck = req.body?.payload?.active
         if (typeof checkcheckcheck === 'undefined') checkcheckcheck = true
