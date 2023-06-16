@@ -14,6 +14,67 @@ class requestdata extends dbservices {
   constructor() {
     super()
   }
+  async createcommunitypostv2(body) {
+    const user = body.user
+    let response
+    delete body.user
+    delete body.jwt
+    if (user) {
+      if (user.userName === body.id.split('-', 1)[0]) {
+        body.postId = body.id + "-" + uuidv1().split('-').join('')
+        await this.updateRequestData("CommunityPost", { who: { communityId: body.id }, update: { $push: { posts: { date: new Date(), post: body.post, postId: body.postId, filePath: body.file } } } }).then(value => {
+          if (value.Result && value.Status.matchedCount === 1) {
+            return this.insertOneData("Likedby", { id: body.postId, type: "community" })
+          }
+          else {  
+            response = { Result: false, Response: responseMessage.statusMessages.dbUpdateErr }
+          }
+        }).then(value => {
+          if (value.Result) {
+            return this.insertOneData("Comment", { id: body.postId, type: "community" })
+          }
+          else response = { Result: false, Response: responseMessage.statusMessages.dbUpdateErr }
+        }).then(async value => {
+          if (value.Result) {
+            response = { Result: true, Response: { status: "Success", user: user.userName } }
+            const fol = await this.readRequestData('Followers', { id: body.id })
+            const c = await this.mongo.collection('Community').aggregate([{ $match: { userName: user.userName } }, { $unwind: '$community' }, { $match: { 'community.communityId': body.id } }]).toArray()
+            if (fol.length && fol[0]?.followers.length) {
+              for (let i = 0; i < fol[0].followers.length; i++) {
+                if (fol[0].followers[i] === user.userName)
+                  continue
+                const token = await this.readRequestData('UserSockets', { userName: fol[0].followers[i] })
+                if (token.length && token[0].expoToken) {
+                  await expo([{
+                    to: token[0].expoToken,
+                    sound: 'default',
+                    body: `${c[0].community.communityName} shared a post`,
+                    data: { url: `/post/${body.id}`, postID: body.id },
+                  }])
+                }
+              }
+            }
+            // const userinradius = await this.mongo.collection('Users').find({ location: { $geoWithin: { $centerSphere: [c[0].community.communityLoc.coordinates, 12 / 3963.2] } } }).toArray()
+            // for (let i of userinradius) {
+            //   const token = await this.readRequestData('UserSockets', { userName: i.userName })
+            //   if(token.length&&token[0].expoToken)
+            //   await expo([{
+            //     to: token[0].expoToken,
+            //     sound: 'default',
+            //     body: `${c[0].community.communityName} shared a post`,
+            //     data: { postID: body.id },
+            //   }])
+            // }
+          }
+          else response = { Result: false, Response: responseMessage.statusMessages.dbUpdateErr }
+        }).catch(error => {
+          // console.log(error)
+          response = error
+        })
+        return {Result:true,Response:{ date: new Date(), post: body.post, postId: body.postId, filePath: body.file }}
+      }
+    }
+  }
   async createpostv2(body) {
     const user = body.user
     delete body.user
@@ -359,6 +420,7 @@ class requestdata extends dbservices {
     const user = body.user
     delete body.user
     delete body.jwt
+    delete body.isFeatured
     // const u = await this.readRequestData('Events', { userName: user })
     // console.log(u)
     body.location = { type: 'Point', coordinates: body.location }

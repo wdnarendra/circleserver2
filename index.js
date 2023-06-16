@@ -111,6 +111,22 @@ app.post('/api', async (req, res) => {
       case "getcategories":
         res.json({ status: true, response: await appdata.readRequestData('Categories', {}) })
         break
+      case "createcommunitypostv2":
+        const decodedTokennnnn = validator.validatejwt(req.body.payload.jwt)
+        if (decodedTokennnnn.Result) {
+          req.body.payload.user = decodedTokennnnn.Response
+          const abcdef = await appdata.createcommunitypostv2(req.body.payload)
+          if (abcdef.Result) {
+            res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Success, responseMessage.statusCode.Accepted, abcdef.Response)))
+          }
+          else {
+            res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Failed, responseMessage.statusCode.BadRequest, false)))
+          }
+        }
+        else {
+          res.send(JSawaitON.stringify(finalResponse(uniqueId, responseMessage.status.Failed, responseMessage.statusCode.BadRequest, false)))
+        }
+        break
       case "createpostv2":
         const decodedToken = await validator.validatejwt(req.body.payload.jwt)
         if (decodedToken.Result) {
@@ -123,7 +139,7 @@ app.post('/api', async (req, res) => {
             res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Failed, responseMessage.statusCode.BadRequest, false)))
           }
         } else {
-          res.send(JSON.stringify(finalResponse(uniqueId, responseMessage.status.Failed, responseMessage.statusCode.BadRequest, false)))
+          res.send(JSawaitON.stringify(finalResponse(uniqueId, responseMessage.status.Failed, responseMessage.statusCode.BadRequest, false)))
         }
         break
       case "editevent":
@@ -477,4 +493,4 @@ function finalResponse(id, statmsg, statcode, res) {
   return finalRes;
 }
 
-app.listen(8080)
+app.listen(8081)
